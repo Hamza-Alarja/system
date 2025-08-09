@@ -1,59 +1,77 @@
 "use client";
-import {
-  useUser,
-  createClientComponentClient,
-} from "@supabase/auth-helpers-react";
-import { useState, useEffect } from "react";
 
-export default function ProfilePage() {
-  const user = useUser();
-  const [employeeData, setEmployeeData] = useState(null);
+import { useEffect, useState } from "react";
+import { useAuthStore } from "@/store/auth";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useRouter } from "next/navigation";
+
+interface UserProfile {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  // أضف بيانات أخرى خاصة بالمستخدم إذا أردت
+}
+
+export default function MyDashboard() {
+  const { user, isAuthenticated } = useAuthStore();
+  const router = useRouter();
+
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // تأكد أن المستخدم مسجل دخول
   useEffect(() => {
-    if (!user) {
-      setLoading(false);
+    if (!isAuthenticated) {
+      router.push("/login"); // أو أي صفحة تسجيل دخول لديك
       return;
     }
 
-    const fetchEmployee = async () => {
+    async function fetchUserData() {
       try {
-        const supabase = createClientComponentClient();
-        const { data, error } = await supabase
-          .from("employees")
-          .select(
-            `
-            name, 
-            role, 
-            salary,
-            showroom:showrooms(name)
-          `
-          )
-          .eq("user_id", user.id)
-          .single();
-        if (error) throw error;
-        setEmployeeData(data);
+        // جلب بيانات المستخدم من API خاص أو من Supabase مباشرة
+        const res = await fetch("/api/user-profile"); // أنشئ هذه الـ API لاحقًا
+        if (!res.ok) throw new Error("Failed to fetch profile");
+        const data = await res.json();
+        setProfile(data);
       } catch (error) {
-        console.error("Error fetching employee data:", error);
+        console.error(error);
+        // هنا يمكنك التعامل مع الخطأ (مثلاً إعادة توجيه، رسالة خطأ..)
       } finally {
         setLoading(false);
       }
-    };
+    }
 
-    fetchEmployee();
-  }, [user]);
+    fetchUserData();
+  }, [isAuthenticated, router]);
 
-  if (loading) return <div>جارٍ التحميل...</div>;
-  if (!user) return <div>يرجى تسجيل الدخول</div>;
+  if (loading) {
+    return <div>جارٍ التحميل...</div>;
+  }
+
+  if (!profile) {
+    return <div>لم يتم العثور على بيانات المستخدم</div>;
+  }
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">مرحبا {employeeData?.name}</h1>
-      <div className="space-y-2">
-        <p>الوظيفة: {employeeData?.role}</p>
-        <p>الراتب: {employeeData?.salary}</p>
-        <p>المعرض: {employeeData?.showroom?.name}</p>
-      </div>
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold">مرحباً، {profile.name}</h1>
+      <Card>
+        <CardHeader>
+          <CardTitle>معلومات الحساب</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p>
+            <strong>البريد الإلكتروني:</strong> {profile.email}
+          </p>
+          <p>
+            <strong>الدور:</strong> {profile.role}
+          </p>
+          {/* أضف بيانات أخرى هنا حسب الحاجة */}
+        </CardContent>
+      </Card>
+
+      {/* أضف مكونات أخرى خاصة بالمستخدم */}
     </div>
   );
 }

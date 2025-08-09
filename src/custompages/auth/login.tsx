@@ -24,11 +24,11 @@ import { loginSchema, type LoginFormData } from "@/lib/validations/auth";
 import { useAuthStore } from "@/store/auth";
 import { Building2, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/app/db/supabase";
 
 export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuthStore();
+  const login = useAuthStore((state) => state.login);
+  const user = useAuthStore((state) => state.user);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -40,54 +40,21 @@ export function LoginPage() {
     },
   });
 
-  const onSubmit = async (formData: FormData) => {
-    const email = formData.get("email")?.toString();
-    const password = formData.get("password")?.toString();
-
-    if (!email || !password) {
-      return toast({
-        title: "Error",
-        description: "Email and password are required",
-        variant: "destructive",
-      });
-    }
-
+  const onSubmit = async (values: LoginFormData) => {
     try {
-      // 1. تسجيل الدخول مع Supabase
-      const { data, error: authError } = await supabase.auth.signInWithPassword(
-        {
-          email: email,
-          password: password,
-        }
-      );
-
-      if (authError) throw authError;
-
-      // 2. جلب الدور
-      const roleRes = await fetch("/api/get-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
-
-      if (!roleRes.ok) {
-        const errorData = await roleRes.json();
-        throw new Error(errorData.error || "Failed to get role");
-      }
-
-      const { role } = await roleRes.json();
-
-      // 3. حفظ بيانات المستخدم
-      await login(email, password);
-
-      router.push("/dashboard");
-    } catch (error) {
-      console.error("Login Error:", error);
+      setIsLoading(true);
+      await login(values.email, values.password);
+      // جلب الدور من الستور بعد نجاح تسجيل الدخول
+      const role = useAuthStore.getState().user?.role || "manager";
+      router.push(role === "employee" ? "/dashboard/profile" : "/dashboard");
+    } catch (error: any) {
       toast({
-        title: "Login Failed",
+        title: "فشل تسجيل الدخول",
         description: error.message,
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 

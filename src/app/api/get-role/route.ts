@@ -16,7 +16,7 @@ export async function POST() {
   const { data, error: dbError } = await supabase
     .from("users")
     .select("role")
-    .eq("auth_user_id", user.id) // ✅ استخدم auth_user_id
+    .eq("auth_user_id", user.id)
     .single();
 
 

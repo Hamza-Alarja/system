@@ -7,14 +7,14 @@ interface User {
   email: string;
   name: string;
   role: string;
-  isActive: boolean;
+  isActive?: boolean; // حسب حاجتك
 }
 
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<any>;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 }
@@ -27,11 +27,13 @@ export const useAuthStore = create<AuthState>()(
       isLoading: false,
 
       login: async (email: string, password: string) => {
+        set({ isLoading: true });
         try {
           if (typeof email !== 'string' || typeof password !== 'string') {
             throw new Error('Email and password must be strings');
           }
 
+          // تسجيل الدخول
           const { data, error } = await supabase.auth.signInWithPassword({
             email: email.trim(),
             password: password.trim(),
@@ -40,31 +42,27 @@ export const useAuthStore = create<AuthState>()(
           if (error) throw error;
           if (!data.user) throw new Error('User not found after login');
 
-          // 2. جلب بيانات المستخدم من جدول users (يشمل الدور role)
+          // جلب بيانات المستخدم من جدول users (الاسم والدور)
           const { data: userData, error: userError } = await supabase
             .from('users')
-            .select('*')
-            .eq('auth_user_id', data.user.id) // ✅ بدل id استخدم auth_user_id
+            .select('name, role')
+            .eq('auth_user_id', data.user.id)
             .single();
-
 
           if (userError) throw userError;
 
-          // 3. تحديث حالة المستخدم في Zustand مع كل البيانات المطلوبة
           set({
             user: {
               id: data.user.id,
-              email: userData.email || data.user.email || '',
-              name: userData.name || '',
-              role: userData.role || 'owner',
-              isActive: userData.is_active || false,
+              email: data.user.email || email,
+              name: userData?.name || '',
+              role: userData?.role || 'employee',
             },
             isAuthenticated: true,
+            isLoading: false,
           });
-
-          // 4. ترجع بيانات الدخول (اختياري)
-          return data;
         } catch (error) {
+          set({ isLoading: false });
           console.error('Login error:', error);
           throw error;
         }
@@ -91,10 +89,11 @@ export const useAuthStore = create<AuthState>()(
           } = await supabase.auth.getSession();
 
           if (session?.user) {
+            // جلب بيانات المستخدم من جدول users (الاسم والدور)
             const { data: userData, error: profileError } = await supabase
               .from('users')
-              .select('*')
-              .eq('id', session.user.id)
+              .select('name, role')
+              .eq('auth_user_id', session.user.id)
               .single();
 
             if (profileError || !userData) throw profileError;
@@ -103,9 +102,8 @@ export const useAuthStore = create<AuthState>()(
               user: {
                 id: session.user.id,
                 email: session.user.email ?? '',
-                name: userData.full_name ?? '',
-                role: userData.role,
-                isActive: true,
+                name: userData.name ?? '',
+                role: userData.role ?? 'employee',
               },
               isAuthenticated: true,
               isLoading: false,
@@ -118,6 +116,7 @@ export const useAuthStore = create<AuthState>()(
             });
           }
         } catch (error) {
+          console.error('checkAuth error:', error);
           set({
             user: null,
             isAuthenticated: false,

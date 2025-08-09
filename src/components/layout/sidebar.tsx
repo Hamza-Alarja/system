@@ -60,8 +60,19 @@ export function Sidebar({ className }: SidebarProps) {
 
   const { user } = useAuthStore();
 
+  if (
+    !user ||
+    !["owner", "accountant"].includes(user.role.trim().toLowerCase())
+  ) {
+    return null;
+  }
+  console.log("User role:", user.role);
+
   const filteredNavigation = navigation.filter(
-    (item) => user && item.roles.includes(user.role)
+    (item) =>
+      user &&
+      ["owner", "accountant"].includes(user.role) &&
+      item.roles.includes(user.role)
   );
 
   return (

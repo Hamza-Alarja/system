@@ -1,4 +1,5 @@
 "use client";
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,15 +25,12 @@ import { useToast } from "@/hooks/use-toast";
 import { loginSchema, type LoginFormData } from "@/lib/validations/auth";
 import { useAuthStore } from "@/store/auth";
 import { Building2, Loader2 } from "lucide-react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
 export default function Page() {
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuthStore();
+  const login = useAuthStore((state) => state.login);
   const { toast } = useToast();
   const router = useRouter();
-
-  const supabase = createClientComponentClient();
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -44,46 +42,8 @@ export default function Page() {
 
   const onSubmit = async (formData: LoginFormData) => {
     setIsLoading(true);
-
     try {
-      // 1. تسجيل الدخول
-      const { error } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
-      });
-
-      if (error) throw error;
-
-      // 2. جلب الجلسة المحدثة
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      console.log("Session:", session);
-
-      const roleRes = await fetch("/api/get-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
-
-      if (!roleRes.ok) {
-        const errorData = await roleRes.json();
-        throw new Error(errorData.error || "Failed to get user role");
-      }
-
-      const { role } = await roleRes.json();
-
-      // 4. حفظ بيانات المستخدم
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      login({
-        id: user?.id || "",
-        email: user?.email || "",
-        role,
-        isActive: true,
-      });
-
+      await login(formData.email, formData.password);
       router.push("/dashboard");
     } catch (error: any) {
       toast({
@@ -95,6 +55,7 @@ export default function Page() {
       setIsLoading(false);
     }
   };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-card p-4">
       <Card className="w-full max-w-md">

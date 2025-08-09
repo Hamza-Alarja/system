@@ -36,6 +36,11 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/showrooms/route.js"
     ],
+    "/dashboard/showrooms/new/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/dashboard/showrooms/new/page.js"
+    ],
     "/dashboard/employees/layout": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -61,15 +66,15 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/transactions/route.js"
     ],
-    "/dashboard/showrooms/new/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/showrooms/new/page.js"
-    ],
     "/dashboard/employees/new/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/dashboard/employees/new/page.js"
+    ],
+    "/api/create-user/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/create-user/route.js"
     ]
   }
 }
