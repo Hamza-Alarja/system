@@ -1,14 +1,13 @@
 // src/app/api/create-showroom/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { showroomSchema } from "@/lib/validations/showroom";
-import { createClient } from "@/lib/supabase/server"; // هذا client فيه cookies()
+import { createRouteHandlerClient } from "@/lib/supabase/server"; 
 import { supabaseAdmin } from "@/lib/supabase/serverAdminClient";
 
 export async function POST(req: NextRequest) {
-  const supabase = createClient(); // للحصول على auth session
+  const supabase = createRouteHandlerClient(); 
   const body = await req.json();
 
-  // التحقق من صحة البيانات
   const validation = showroomSchema.safeParse(body);
   if (!validation.success) {
     return NextResponse.json(
@@ -17,7 +16,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // الحصول على المستخدم الحالي
   const {
     data: { user },
     error: userError,
@@ -29,12 +27,11 @@ export async function POST(req: NextRequest) {
 
   const { name, address, managers } = validation.data;
 
-  // إنشاء المعرض في supabase
   const { error } = await supabaseAdmin.from("showrooms").insert({
     name,
     address,
-    owner_id: user.id, // الربط بصاحب الحساب الحالي
-    manager_name: managers?.join(", ") || null, // نستخدم join للمصفوفة (أو null)
+    owner_id: user.id,
+    manager_name: managers?.join(", ") || null,
   });
 
   if (error) {

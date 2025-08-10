@@ -86,9 +86,11 @@ export function AddShowroomPage() {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({
           name: data.name,
           address: data.address,
+          managers,
         }),
       });
 

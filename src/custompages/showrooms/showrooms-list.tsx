@@ -49,9 +49,7 @@ export function ShowroomsListPage() {
       try {
         const res = await fetch("/api/showrooms", {
           method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          credentials: "include",
         });
 
         if (!res.ok) {

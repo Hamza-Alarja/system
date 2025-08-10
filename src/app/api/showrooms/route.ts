@@ -1,9 +1,8 @@
-// src/app/api/showrooms/route.ts
-import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { createRouteHandlerClient } from "@/lib/supabase/server";
 
 export async function GET() {
-  const supabase = createClient();
+  const supabase =  createRouteHandlerClient();
 
   const {
     data: { user },
@@ -19,7 +18,6 @@ export async function GET() {
     .select("*")
     .eq("owner_id", user.id)
     .order("created_at", { ascending: false });
-console.log("User ID from supabase auth:", user.id);
 
   if (error) {
     return NextResponse.json(

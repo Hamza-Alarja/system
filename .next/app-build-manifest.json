@@ -11,11 +11,6 @@
       "static/chunks/main-app.js",
       "static/chunks/app/page.js"
     ],
-    "/api/get-role/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/get-role/route.js"
-    ],
     "/dashboard/layout": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -36,11 +31,6 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/showrooms/route.js"
     ],
-    "/dashboard/showrooms/new/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/showrooms/new/page.js"
-    ],
     "/dashboard/employees/layout": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -56,6 +46,11 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/employees/route.js"
     ],
+    "/dashboard/employees/new/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/dashboard/employees/new/page.js"
+    ],
     "/dashboard/transactions/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -66,15 +61,30 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/transactions/route.js"
     ],
-    "/dashboard/employees/new/page": [
+    "/dashboard/showrooms/new/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/employees/new/page.js"
+      "static/chunks/app/dashboard/showrooms/new/page.js"
     ],
-    "/api/create-user/route": [
+    "/api/create-showroom/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/api/create-user/route.js"
+      "static/chunks/app/api/create-showroom/route.js"
+    ],
+    "/dashboard/profile/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/dashboard/profile/page.js"
+    ],
+    "/api/user-profile/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/user-profile/route.js"
+    ],
+    "/_not-found/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/_not-found/page.js"
     ]
   }
 }

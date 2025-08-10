@@ -44,7 +44,13 @@ export default function Page() {
     setIsLoading(true);
     try {
       await login(formData.email, formData.password);
-      router.push("/dashboard");
+      const userRole = useAuthStore.getState().user?.role;
+
+      if (userRole !== "owner") {
+        router.push("/dashboard/profile");
+      } else {
+        router.push("/dashboard");
+      }
     } catch (error: any) {
       toast({
         title: "فشل تسجيل الدخول",
