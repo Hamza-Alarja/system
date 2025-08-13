@@ -6,7 +6,6 @@ export async function GET(request: Request) {
   try {
     const supabase = createRouteHandlerClient({ cookies });
 
-    // استخرج المستخدم من الـ token الموجود في cookies
     const {
       data: { user },
       error: userError,
@@ -16,7 +15,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // جلب بيانات المستخدم من جدول users
     const { data: userData, error: userError2 } = await supabase
       .from("users")
       .select("id, email, auth_user_id")
@@ -27,7 +25,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // جلب بيانات الموظف المرتبط بهذا المستخدم
     const { data: employees, error: empError } = await supabase
       .from("employees")
       .select("id, name, salary, role, showroom_id, created_at")
@@ -39,7 +36,6 @@ export async function GET(request: Request) {
 
     const employee = employees[0];
 
-    // جلب اسم المعرض المرتبط بالموظف
 const { data: showrooms, error: showroomError } = await supabase
   .from("showrooms")
   .select("name")

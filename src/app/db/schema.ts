@@ -70,12 +70,13 @@ export const advance_payments = pgTable('advance_payments', {
 });
 
 // Expenses
-export const expenses = pgTable('expenses', {
-  id: serial('id').primaryKey(),
-  amount: integer('amount').notNull(),
-  description: text('description'),
-  showroom_id: uuid('showroom_id').references(() => showrooms.id),
-  created_at: timestamp('created_at').defaultNow(),
+export const expenses = pgTable("expenses", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  amount: integer("amount").notNull(),
+  description: text("description"),
+  employee_id: uuid("employee_id").references(() => employees.id),  // معرف الموظف
+  showroom_id: uuid("showroom_id").references(() => showrooms.id), // لازم هذا الحقل موجود
+  created_at: timestamp("created_at").defaultNow(),
 });
 
 // Deductions

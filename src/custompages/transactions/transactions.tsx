@@ -4,7 +4,6 @@ import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -15,18 +14,25 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import {
-  Plus,
   Search,
   ArrowUp,
   ArrowDown,
   Wallet,
   Banknote,
   HandCoins,
+  Filter,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { useAppStore } from "@/store/app";
 import { TransactionFormDialog } from "@/components/transactions/transaction-form-dialog";
 
 type TransactionType = "salary" | "sales" | "custody" | "expense" | "deduction";
+
+interface SortConfig {
+  key: keyof any;
+  direction: "ascending" | "descending";
+}
 
 export function TransactionsPage() {
   const fetchEmployees = useAppStore((state) => state.fetchEmployees);
@@ -38,11 +44,22 @@ export function TransactionsPage() {
   const transactions = useAppStore((state) => state.transactions);
   const setTransactions = useAppStore((state) => state.setTransactions);
 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState<"all" | TransactionType>("all");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [transactionType, setTransactionType] =
+    useState<TransactionType>("sales");
+  const [dateRange, setDateRange] = useState<{ start?: Date; end?: Date }>({});
+  const [showFilters, setShowFilters] = useState(false);
+  const [sortConfig, setSortConfig] = useState<SortConfig | null>({
+    key: "created_at",
+    direction: "descending",
+  });
+
   useEffect(() => {
     const loadData = async () => {
       try {
-        await fetchEmployees();
-        await fetchShowrooms();
+        await Promise.all([fetchEmployees(), fetchShowrooms()]);
 
         const res = await fetch("/api/transactions");
         if (!res.ok) throw new Error("Failed to fetch transactions");
@@ -56,14 +73,41 @@ export function TransactionsPage() {
     loadData();
   }, [fetchEmployees, fetchShowrooms, setTransactions]);
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState<"all" | TransactionType>("all");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [transactionType, setTransactionType] =
-    useState<TransactionType>("sales");
+  const requestSort = (key: keyof any) => {
+    let direction: "ascending" | "descending" = "ascending";
+    if (
+      sortConfig &&
+      sortConfig.key === key &&
+      sortConfig.direction === "ascending"
+    ) {
+      direction = "descending";
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedTransactions = useMemo(() => {
+    let sortableItems = [...transactions];
+    if (sortConfig !== null) {
+      sortableItems.sort((a, b) => {
+        const aValue = a[sortConfig.key];
+        const bValue = b[sortConfig.key];
+
+        if (aValue === undefined || bValue === undefined) return 0;
+
+        if (aValue < bValue) {
+          return sortConfig.direction === "ascending" ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === "ascending" ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [transactions, sortConfig]);
 
   const { filteredTransactions, totals } = useMemo(() => {
-    const filtered = transactions.filter((t) => {
+    const filtered = sortedTransactions.filter((t) => {
       const matchesSearch =
         t.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         t.amount.toString().includes(searchTerm) ||
@@ -72,14 +116,20 @@ export function TransactionsPage() {
         (t.showroom_name &&
           t.showroom_name.toLowerCase().includes(searchTerm.toLowerCase()));
 
-      return matchesSearch;
+      const matchesType = activeTab === "all" || t.type === activeTab;
+
+      const matchesDateRange =
+        (!dateRange.start || new Date(t.created_at) >= dateRange.start) &&
+        (!dateRange.end || new Date(t.created_at) <= dateRange.end);
+
+      return matchesSearch && matchesType && matchesDateRange;
     });
 
-    const income = transactions
+    const income = filtered
       .filter((t) => ["sales", "custody"].includes(t.type))
       .reduce((sum, t) => sum + t.amount, 0);
 
-    const expenses = transactions
+    const expenses = filtered
       .filter((t) => ["salary", "expense", "deduction"].includes(t.type))
       .reduce((sum, t) => sum + t.amount, 0);
 
@@ -91,7 +141,7 @@ export function TransactionsPage() {
         net: income - expenses,
       },
     };
-  }, [transactions, searchTerm]);
+  }, [sortedTransactions, searchTerm, activeTab, dateRange]);
 
   const getEmployeeName = (id?: string | number) =>
     employees.find((e) => String(e.id) === String(id))?.name || "—";
@@ -148,6 +198,68 @@ export function TransactionsPage() {
     },
   ];
 
+  const renderSortIcon = (key: keyof any) => {
+    if (!sortConfig || sortConfig.key !== key) return null;
+    return sortConfig.direction === "ascending" ? (
+      <ChevronUp className="h-4 w-4 inline ml-1" />
+    ) : (
+      <ChevronDown className="h-4 w-4 inline ml-1" />
+    );
+  };
+
+  const renderMobileTransactionCard = (t: any) => {
+    const isIncome = ["sales", "custody"].includes(t.type);
+    const config = getTransactionConfig(t.type);
+
+    return (
+      <Card key={t.id} className="mb-4">
+        <CardContent className="p-4">
+          <div className="flex justify-between items-start">
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                {config.icon}
+                <h4 className="font-medium">{config.text}</h4>
+              </div>
+              <p className="text-sm mt-2">{t.description || "—"}</p>
+              <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                <span>
+                  {t.employee_name ||
+                    getEmployeeName(t.employee_id || t.employeeId) ||
+                    "—"}
+                </span>
+                <span>•</span>
+                <span>
+                  {t.showroom_name ||
+                    getShowroomName(t.showroom_id || t.showroomId) ||
+                    "—"}
+                </span>
+              </div>
+            </div>
+            <div
+              className={`font-medium ${
+                isIncome ? "text-green-500" : "text-red-500"
+              }`}
+            >
+              {isIncome ? "+" : "-"}
+              {t.amount.toLocaleString()}
+            </div>
+          </div>
+          <div className="mt-2 text-sm text-muted-foreground">
+            {t.created_at
+              ? new Date(t.created_at).toLocaleDateString("en", {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "—"}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
   const renderTableContent = (transactionsToShow: typeof transactions) => {
     if (transactionsToShow.length === 0) {
       return (
@@ -155,8 +267,8 @@ export function TransactionsPage() {
           <Search className="h-8 w-8 text-muted-foreground" />
           <h3 className="text-lg font-semibold">لا توجد معاملات</h3>
           <p className="text-sm text-muted-foreground max-w-[300px]">
-            {searchTerm
-              ? "لا توجد معاملات مطابقة للبحث"
+            {searchTerm || dateRange.start || dateRange.end
+              ? "لا توجد معاملات مطابقة للبحث أو الفلتر"
               : "ابدأ بإضافة معاملة جديدة"}
           </p>
         </div>
@@ -164,92 +276,241 @@ export function TransactionsPage() {
     }
 
     return (
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[150px] text-right">المبلغ</TableHead>
-              <TableHead className="text-right">الوصف</TableHead>
-              <TableHead className="text-right">الموظف</TableHead>
-              <TableHead className="text-right">المعرض</TableHead>
-              <TableHead className="text-right">التاريخ</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {transactionsToShow.map((t) => {
-              const isIncome = ["sales", "custody"].includes(t.type);
-              return (
-                <TableRow key={t.id} className="hover:bg-muted/50">
-                  <TableCell
-                    className={`font-medium text-right ${
-                      isIncome ? "text-green-500" : "text-red-500"
-                    }`}
-                  >
-                    {isIncome ? "+" : "-"}
-                    {t.amount.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {t.description || "—"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {t.employee_name ||
-                      getEmployeeName(t.employee_id || t.employeeId) ||
-                      "لا يوجد"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {t.showroom_name ||
-                      getShowroomName(t.showroom_id || t.showroomId) ||
-                      "لا يوجد"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {t.created_at
-                      ? new Date(t.created_at).toLocaleDateString("en", {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                        })
-                      : "—"}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
+      <>
+        {/* Mobile View - Cards */}
+        <div className="lg:hidden space-y-2 " dir="rtl">
+          {transactionsToShow.map((t) => renderMobileTransactionCard(t))}
+        </div>
+
+        {/* Desktop View - Table */}
+        <div className="hidden md:block rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead
+                  className="w-[150px] text-right cursor-pointer hover:bg-muted/50"
+                  onClick={() => requestSort("amount")}
+                >
+                  <div className="flex items-center justify-end">
+                    المبلغ
+                    {renderSortIcon("amount")}
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="text-right cursor-pointer hover:bg-muted/50"
+                  onClick={() => requestSort("description")}
+                >
+                  <div className="flex items-center justify-end">
+                    الوصف
+                    {renderSortIcon("description")}
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="text-right cursor-pointer hover:bg-muted/50"
+                  onClick={() => requestSort("employee_name")}
+                >
+                  <div className="flex items-center justify-end">
+                    الموظف
+                    {renderSortIcon("employee_name")}
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="text-right cursor-pointer hover:bg-muted/50"
+                  onClick={() => requestSort("showroom_name")}
+                >
+                  <div className="flex items-center justify-end">
+                    المعرض
+                    {renderSortIcon("showroom_name")}
+                  </div>
+                </TableHead>
+                <TableHead
+                  className="text-right cursor-pointer hover:bg-muted/50"
+                  onClick={() => requestSort("created_at")}
+                >
+                  <div className="flex items-center justify-end">
+                    التاريخ
+                    {renderSortIcon("created_at")}
+                  </div>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {transactionsToShow.map((t) => {
+                const isIncome = ["sales", "custody"].includes(t.type);
+                return (
+                  <TableRow key={t.id} className="hover:bg-muted/50">
+                    <TableCell
+                      className={`font-medium text-right ${
+                        isIncome ? "text-green-500" : "text-red-500"
+                      }`}
+                    >
+                      {isIncome ? "+" : "-"}
+                      {t.amount.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        {t.description || "—"}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {t.employee_name ||
+                        getEmployeeName(t.employee_id || t.employeeId) ||
+                        "لا يوجد"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {t.showroom_name ||
+                        getShowroomName(t.showroom_id || t.showroomId) ||
+                        "لا يوجد"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {t.created_at
+                        ? new Date(t.created_at).toLocaleDateString("en", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : "—"}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      </>
     );
   };
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between gap-4">
+      <div
+        className="flex flex-col md:flex-row justify-between gap-4"
+        dir="rtl"
+      >
         <div>
           <h1 className="text-2xl font-semibold">المعاملات المالية</h1>
           <p className="text-sm text-muted-foreground">
             إدارة جميع السجلات المالية
           </p>
         </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setShowFilters(!showFilters)}
+            className="gap-2 no-spinner"
+          >
+            <Filter className="h-4 w-4" />
+            {showFilters ? "إخفاء الفلاتر" : "عرض الفلاتر"}
+          </Button>
+        </div>
       </div>
 
+      {/* Filters */}
+      {showFilters && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  نوع المعاملة
+                </label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  value={activeTab}
+                  onChange={(e) =>
+                    setActiveTab(e.target.value as "all" | TransactionType)
+                  }
+                >
+                  <option value="all">الكل</option>
+                  <option value="expense">مصروفات</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  من تاريخ
+                </label>
+                <Input
+                  type="date"
+                  onChange={(e) =>
+                    setDateRange({
+                      ...dateRange,
+                      start: e.target.value
+                        ? new Date(e.target.value)
+                        : undefined,
+                    })
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  إلى تاريخ
+                </label>
+                <Input
+                  type="date"
+                  onChange={(e) =>
+                    setDateRange({
+                      ...dateRange,
+                      end: e.target.value
+                        ? new Date(e.target.value)
+                        : undefined,
+                    })
+                  }
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4" dir="rtl">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">
               الأموال المسلمة
             </CardTitle>
-            <ArrowDown className="h-4 w-4 text-red-500" />
+            <ArrowUp className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-green-500">
               {totals.income.toLocaleString()}
             </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {
+                filteredTransactions.filter((t) => ["sales"].includes(t.type))
+                  .length
+              }
+              معاملة
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">صافي الربح</CardTitle>
+            <CardTitle className="text-sm font-medium">المصروفات</CardTitle>
+            <ArrowDown className="h-4 w-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-500">
+              {totals.expenses.toLocaleString()}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {
+                filteredTransactions.filter((t) =>
+                  ["salary", "expense", "deduction"].includes(t.type)
+                ).length
+              }{" "}
+              معاملة
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">العهدة </CardTitle>
             <span
               className={`h-4 w-4 ${
                 totals.net >= 0 ? "text-green-500" : "text-red-500"
@@ -270,12 +531,15 @@ export function TransactionsPage() {
             >
               {Math.abs(totals.net).toLocaleString()}
             </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {filteredTransactions.length} معاملة في المجموع
+            </p>
           </CardContent>
         </Card>
       </div>
 
       {/* Quick Actions */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2" dir="rtl">
         {quickActions.map((action) => (
           <Button
             key={action.type}
@@ -290,7 +554,7 @@ export function TransactionsPage() {
       </div>
 
       {/* Transactions Table */}
-      <Card>
+      <Card dir="rtl">
         <CardHeader>
           <div className="flex flex-col sm:flex-row justify-between gap-4">
             <div>
@@ -315,19 +579,30 @@ export function TransactionsPage() {
             value={activeTab}
             onValueChange={(v) => setActiveTab(v as "all" | TransactionType)}
           >
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="expense">مصروفات</TabsTrigger>
+              <TabsTrigger value="all">الكل</TabsTrigger>
+            </TabsList>
+
             <TabsContent value="all">
               {renderTableContent(filteredTransactions)}
             </TabsContent>
 
-            <TabsContent value="salary">
+            <TabsContent value="sales">
               {renderTableContent(
-                filteredTransactions.filter((t) => t.type === "salary")
+                filteredTransactions.filter((t) => t.type === "sales")
               )}
             </TabsContent>
 
             <TabsContent value="custody">
               {renderTableContent(
                 filteredTransactions.filter((t) => t.type === "custody")
+              )}
+            </TabsContent>
+
+            <TabsContent value="salary">
+              {renderTableContent(
+                filteredTransactions.filter((t) => t.type === "salary")
               )}
             </TabsContent>
 

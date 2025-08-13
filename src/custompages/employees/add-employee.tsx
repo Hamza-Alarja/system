@@ -43,6 +43,7 @@ type Showroom = {
 export function AddEmployeePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showrooms, setShowrooms] = useState<Showroom[]>([]);
+  const [isFetching, setIsFetching] = useState(true);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -50,14 +51,21 @@ export function AddEmployeePage() {
     const fetchShowrooms = async () => {
       try {
         const res = await fetch("/api/showrooms");
+        if (!res.ok) throw new Error("فشل تحميل المعارض");
         const data = await res.json();
         setShowrooms(data.showrooms || []);
       } catch (error) {
-        console.error("فشل تحميل المعارض:", error);
+        toast({
+          title: "خطأ",
+          description: "فشل تحميل قائمة المعارض",
+          variant: "destructive",
+        });
+      } finally {
+        setIsFetching(false);
       }
     };
     fetchShowrooms();
-  }, []);
+  }, [toast]);
 
   const form = useForm<EmployeeFormData>({
     resolver: zodResolver(employeeSchema),
@@ -66,8 +74,8 @@ export function AddEmployeePage() {
       email: "",
       password: "",
       role: "employee",
-      showroomId: "", // 👈 لأن النوع رقمي
-      salary: 0, // 👈 لأن النوع رقمي
+      showroomId: "",
+      salary: "",
     },
   });
 
@@ -75,17 +83,11 @@ export function AddEmployeePage() {
     setIsLoading(true);
 
     try {
-      // تحويل showroomId و salary لنوع number
       const payload = {
-        email: data.email,
-        password: data.password,
-        name: data.name,
-        role: data.role,
+        ...data,
         showroomId: data.showroomId,
         salary: Number(data.salary),
       };
-
-      console.log("إرسال البيانات:", payload);
 
       const response = await fetch("/api/create-user", {
         method: "POST",
@@ -97,20 +99,18 @@ export function AddEmployeePage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.log(errorData); // أضف هذا
-
-        throw new Error(errorData.error || "فشل في إنشاء المستخدم");
+        throw new Error(errorData.error || "فشل في إنشاء الموظف");
       }
 
       toast({
-        title: "تم إنشاء الموظف بنجاح",
-        variant: "success",
+        title: "تم بنجاح",
+        description: "تم إنشاء الموظف بنجاح",
       });
 
       router.push("/dashboard/employees");
     } catch (error) {
       toast({
-        title: "فشل في إنشاء الموظف",
+        title: "خطأ",
         description: (error as Error).message,
         variant: "destructive",
       });
@@ -120,180 +120,221 @@ export function AddEmployeePage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center space-x-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push("/dashboard/employees")}
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">إضافة موظف جديد</h1>
-          <p className="text-muted-foreground">
-            إضافة موظف جديد إلى المعارض الخاصة بك
-          </p>
-        </div>
-      </div>
-
-      <Card className="max-w-2xl">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Users className="mr-2 h-5 w-5" />
-            تفاصيل الموظف
-          </CardTitle>
-          <CardDescription>أدخل تفاصيل الموظف الجديد</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* البريد الإلكتروني */}
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>البريد الإلكتروني</FormLabel>
-                    <FormControl>
-                      <Input placeholder="example@email.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* كلمة المرور */}
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>كلمة المرور</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* اسم الموظف */}
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>اسم الموظف</FormLabel>
-                    <FormControl>
-                      <Input placeholder="أدخل اسم الموظف" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* الدور */}
-              <FormField
-                control={form.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>الدور</FormLabel>
-                    <Select
-                      value={field.value || ""}
-                      onValueChange={(value) => {
-                        console.log("الدور المختار:", value);
-                        field.onChange(value);
-                      }}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="اختر الدور" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="employee">موظف</SelectItem>
-                        <SelectItem value="accountant">محاسب</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* اختيار المعرض */}
-              <FormField
-                control={form.control}
-                name="showroomId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>المعرض</FormLabel>
-                    <Select
-                      value={field.value || ""}
-                      onValueChange={(value) => {
-                        console.log("المعرض المختار:", value);
-                        field.onChange(value);
-                      }}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="اختر معرض" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {showrooms.map((showroom) => (
-                          <SelectItem key={showroom.id} value={showroom.id}>
-                            {showroom.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* الراتب */}
-              <FormField
-                control={form.control}
-                name="salary"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>الراتب الشهري</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="أدخل الراتب الشهري"
-                        type="number"
-                        step="0.01"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* الأزرار */}
-              <div className="flex space-x-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => router.push("/dashboard/employees")}
-                >
-                  إلغاء
-                </Button>
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
-                  إضافة موظف
-                </Button>
+    <div dir="rtl">
+      <div>
+        <Card className="border-0 ">
+          <CardHeader>
+            <div className="flex items-center gap-1">
+              <div className="p-2 text-primary">
+                <Users className="h-5 w-5" />
               </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+              <div>
+                <CardTitle className="text-xl font-semibold text-gray-800 dark:text-white">
+                  تفاصيل الموظف
+                </CardTitle>
+                <CardDescription className="text-gray-600 dark:text-gray-400 mt-1">
+                  الرجاء تعبئة جميع الحقول المطلوبة
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+
+          <CardContent className="p-6">
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-6"
+              >
+                <div className="grid gap-2">
+                  {/* اسم الموظف */}
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          اسم الموظف
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="أدخل الاسم الكامل"
+                            {...field}
+                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:text-white"
+                          />
+                        </FormControl>
+                        <FormMessage className="text-red-500 text-xs mt-1" />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* البريد الإلكتروني */}
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          البريد الإلكتروني
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="example@email.com"
+                            {...field}
+                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:text-white"
+                          />
+                        </FormControl>
+                        <FormMessage className="text-red-500 text-xs mt-1" />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* كلمة المرور */}
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          كلمة المرور
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="password"
+                            placeholder="••••••••"
+                            {...field}
+                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:text-white"
+                          />
+                        </FormControl>
+                        <FormMessage className="text-red-500 text-xs mt-1" />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* الدور */}
+                  <FormField
+                    control={form.control}
+                    name="role"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 ">
+                          الدور الوظيفي
+                        </FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:text-white justify-end">
+                              <SelectValue placeholder="اختر الدور" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="employee">موظف</SelectItem>
+                            <SelectItem value="accountant">محاسب</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage className="text-red-500 text-xs mt-1" />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* المعرض */}
+                  <FormField
+                    control={form.control}
+                    name="showroomId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          المعرض التابع له
+                        </FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          disabled={isFetching}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:text-white justify-end">
+                              <SelectValue
+                                placeholder={
+                                  isFetching
+                                    ? "جاري تحميل المعارض..."
+                                    : "اختر المعرض"
+                                }
+                              />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {showrooms.map((showroom) => (
+                              <SelectItem key={showroom.id} value={showroom.id}>
+                                {showroom.name}
+                              </SelectItem>
+                            ))}
+                            {showrooms.length === 0 && !isFetching && (
+                              <SelectItem value="" disabled>
+                                لا توجد معارض متاحة
+                              </SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage className="text-red-500 text-xs mt-1" />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* الراتب */}
+                  <FormField
+                    control={form.control}
+                    name="salary"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          الراتب الشهري
+                        </FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Input
+                              type="number"
+                              placeholder="0.00"
+                              {...field}
+                              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:text-white pl-12 no-spinner"
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage className="text-red-500 text-xs mt-1" />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => router.push("/dashboard/employees")}
+                    className="px-5 py-2.5 rounded-lg border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  >
+                    إلغاء
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
+                    className="px-5 py-2.5 rounded-lg bg-primary hover:bg-primary/90 text-white shadow-sm"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                        جاري الحفظ...
+                      </>
+                    ) : (
+                      "إضافة الموظف"
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

@@ -2,8 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { SupabaseProvider } from "@/lib/supabase/provider";
-import { ThemeProvider } from "next-themes";
-import { ThemeToggle } from "@/components/theme-toggle";
+
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -18,7 +17,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ar">
+    <html lang="ar" suppressHydrationWarning>
       <body className={inter.className}>
         <SupabaseProvider>{children}</SupabaseProvider>
       </body>

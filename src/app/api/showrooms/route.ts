@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createRouteHandlerClient } from "@/lib/supabase/server";
 
 export async function GET() {
-  const supabase =  createRouteHandlerClient();
+  const supabase = createRouteHandlerClient();
 
   const {
     data: { user },
@@ -13,10 +13,14 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // يمكنك هنا جلب الدور من جدول users إذا لم يكن موجوداً في user
+  // if (!["owner", "accountant"].includes(user.role)) {
+  //   return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  // }
+
   const { data, error } = await supabase
     .from("showrooms")
     .select("*")
-    .eq("owner_id", user.id)
     .order("created_at", { ascending: false });
 
   if (error) {

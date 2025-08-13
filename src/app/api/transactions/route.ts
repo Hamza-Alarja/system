@@ -38,13 +38,13 @@ export async function POST(request: Request) {
 
     switch (type) {
       case "salary":
-        newRecord = await db.insert(salary_records).values(commonFields).returning();
-        break;
-      case "sales":
         newRecord = await db.insert(sales).values(commonFields).returning();
         break;
+      case "sales":
+        newRecord = await db.insert(salary_records).values(commonFields).returning();
+        break;
       case "custody":
-        newRecord = await db.insert(advance_payments).values(commonFields).returning();
+        newRecord = await db.insert(sales).values(commonFields).returning();
         break;
       case "expense":
         newRecord = await db
@@ -138,23 +138,39 @@ export async function GET(request: Request) {
       data = data.concat(custodies.map((r) => ({ ...r, type: "custody" })));
       if (type === "custody") return NextResponse.json(data);
     }
+  if (!type || type === "expense") {
+  const expensesData = await db
+    .select({
+      id: expenses.id,
+      amount: expenses.amount,
+      description: expenses.description,
+      created_at: expenses.created_at,
+      employee_name: employees.name,
+      showroom_name: showrooms.name,
+    })
+    .from(expenses)
+    .leftJoin(employees, eq(expenses.employee_id, employees.user_id))
+    .leftJoin(showrooms, eq(employees.showroomId, showrooms.id))
+    .where(makeConditions(expenses).length ? and(...makeConditions(expenses)) : undefined)
+    .orderBy(desc(expenses.created_at));
 
-    if (!type || type === "expense") {
-      const conditions = showroomId ? [eq(expenses.showroom_id, showroomId)] : [];
-      const expensesData = await db
-        .select({
-          ...expenses,
-          showroom_name: showrooms.name,
-        })
-        .from(expenses)
-        .leftJoin(showrooms, eq(expenses.showroom_id, showrooms.id))
-        .where(conditions.length ? and(...conditions) : undefined)
-        .orderBy(desc(expenses.created_at));
+  console.log("Expenses data fetched:", expensesData);
 
-      data = data.concat(expensesData.map((r) => ({ ...r, type: "expense" })));
-      
-      if (type === "expense") return NextResponse.json(data);
-    }
+  const resultWithDefaults = expensesData.map((r) => ({
+    ...r,
+    employee_name: r.employee_name || "—",
+    showroom_name: r.showroom_name || "—",
+    type: "expense",
+  }));
+
+  console.log("Expenses data after adding defaults:", resultWithDefaults);
+
+  data = data.concat(resultWithDefaults);
+
+  if (type === "expense") return NextResponse.json(resultWithDefaults);
+}
+
+
 
     if (!type || type === "deduction") {
       const deductionsData = await db
@@ -169,11 +185,12 @@ export async function GET(request: Request) {
         .where(makeConditions(deductions).length ? and(...makeConditions(deductions)) : undefined)
         .orderBy(desc(deductions.created_at));
 
-      data = data.concat(deductionsData.map((r) => ({ ...r, type: "deduction"
-        
-       })));
-      if (type === "deduction") return NextResponse.json(data) ;
-      
+      data = data.concat(deductionsData.map((r) => ({
+        ...r, type: "deduction"
+
+      })));
+      if (type === "deduction") return NextResponse.json(data);
+
     }
 
     data.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());

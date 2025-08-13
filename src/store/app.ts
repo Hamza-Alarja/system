@@ -64,6 +64,7 @@ export const useAppStore = create<AppState>()((set) => ({
     const data = await res.json();
     set({ showrooms: data.showrooms || [] });
   },
+  
   fetchTransactions: async () => {
     const res = await fetch("/api/transactions");
     const data = await res.json();

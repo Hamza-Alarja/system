@@ -137,16 +137,15 @@ export function TransactionFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="capitalize">
-            إضافة معاملة: {transactionType}
-          </DialogTitle>
-          <DialogDescription>
-            قم بتسجيل معاملة جديدة من نوع {transactionType}
-          </DialogDescription>
+          <DialogTitle className="capitalize">إضافة معاملة</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4"
+            dir="rtl"
+          >
             {/* المبلغ */}
             <FormField
               control={form.control}
@@ -159,6 +158,7 @@ export function TransactionFormDialog({
                       placeholder="أدخل المبلغ"
                       type="number"
                       step="0.01"
+                      className="no-spinner"
                       {...field}
                     />
                   </FormControl>
@@ -278,7 +278,7 @@ export function TransactionFormDialog({
               />
             )}
 
-            <div className="flex space-x-2">
+            <div className="flex flex-row-reverse space-x-2">
               <Button
                 type="button"
                 variant="outline"
@@ -288,7 +288,9 @@ export function TransactionFormDialog({
                 إلغاء
               </Button>
               <Button type="submit" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isLoading && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin " />
+                )}
                 تسجيل المعاملة
               </Button>
             </div>

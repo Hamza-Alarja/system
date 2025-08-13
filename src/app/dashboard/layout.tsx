@@ -1,6 +1,7 @@
 "use client";
 
 import { Sidebar } from "@/components/layout/sidebar";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function DashboardLayout({
   children,
@@ -8,9 +9,11 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex ">
+    <div className="flex flex-row-reverse min-h-screen">
       <Sidebar />
-      <main className="flex-1 p-4">{children}</main>
+      <main className="flex-1 p-4  flex-row-reverse min-h-screen ">
+        {children}
+      </main>
     </div>
   );
 }

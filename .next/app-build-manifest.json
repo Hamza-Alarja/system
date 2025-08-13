@@ -31,6 +31,16 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/showrooms/route.js"
     ],
+    "/api/employees/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/employees/route.js"
+    ],
+    "/dashboard/showrooms/new/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/dashboard/showrooms/new/page.js"
+    ],
     "/dashboard/employees/layout": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -40,11 +50,6 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/dashboard/employees/page.js"
-    ],
-    "/api/employees/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/employees/route.js"
     ],
     "/dashboard/employees/new/page": [
       "static/chunks/webpack.js",
@@ -61,10 +66,10 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/transactions/route.js"
     ],
-    "/dashboard/showrooms/new/page": [
+    "/api/create-user/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/showrooms/new/page.js"
+      "static/chunks/app/api/create-user/route.js"
     ],
     "/api/create-showroom/route": [
       "static/chunks/webpack.js",
@@ -81,10 +86,20 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/user-profile/route.js"
     ],
-    "/_not-found/page": [
+    "/api/expenses/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/_not-found/page.js"
+      "static/chunks/app/api/expenses/route.js"
+    ],
+    "/api/paid-funds/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/paid-funds/route.js"
+    ],
+    "/api/salaries/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/salaries/route.js"
     ]
   }
 }

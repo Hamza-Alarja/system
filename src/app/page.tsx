@@ -46,7 +46,7 @@ export default function Page() {
       await login(formData.email, formData.password);
       const userRole = useAuthStore.getState().user?.role;
 
-      if (userRole !== "owner") {
+      if (userRole == "employee") {
         router.push("/dashboard/profile");
       } else {
         router.push("/dashboard");
