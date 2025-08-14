@@ -114,17 +114,21 @@ export function TransactionsPage() {
     const income = filtered
       .filter((t) => ["sales", "custody"].includes(t.type))
       .reduce((sum, t) => sum + t.amount, 0);
+    const salariesPaid = filtered
+      .filter((t) => t.type === "salary")
+      .reduce((sum, t) => sum + t.amount, 0);
 
     const expenses = filtered
-      .filter((t) => ["sales", "expense", "deduction"].includes(t.type))
+      .filter((t) => ["expense"].includes(t.type))
       .reduce((sum, t) => sum + t.amount, 0);
 
     return {
       filteredTransactions: filtered,
       totals: {
+        salariesPaid,
         income,
         expenses,
-        net: income - expenses,
+        net: income - expenses - salariesPaid,
       },
     };
   }, [sortedTransactions, searchTerm, activeTab, dateRange]);
@@ -405,9 +409,7 @@ export function TransactionsPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4" dir="rtl">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              الأموال المسلمة
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">الرواتب</CardTitle>
             <ArrowUp className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
@@ -418,7 +420,7 @@ export function TransactionsPage() {
               {
                 filteredTransactions.filter((t) => ["sales"].includes(t.type))
                   .length
-              }
+              }{" "}
               معاملة
             </p>
           </CardContent>
@@ -426,7 +428,7 @@ export function TransactionsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">المصروفات</CardTitle>
+            <CardTitle className="text-sm font-medium">المصاريف</CardTitle>
             <ArrowDown className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
@@ -435,9 +437,8 @@ export function TransactionsPage() {
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {
-                filteredTransactions.filter((t) =>
-                  ["sales", "expense", "deduction"].includes(t.type)
-                ).length
+                filteredTransactions.filter((t) => ["expense"].includes(t.type))
+                  .length
               }{" "}
               معاملة
             </p>
@@ -465,10 +466,11 @@ export function TransactionsPage() {
                 totals.net >= 0 ? "text-green-500" : "text-red-500"
               }`}
             >
-              {Math.abs(totals.net).toLocaleString()}
+              {totals.salariesPaid.toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {filteredTransactions.length} معاملة في المجموع
+              {filteredTransactions.filter((t) => t.type === "salary").length}{" "}
+              معاملة
             </p>
           </CardContent>
         </Card>
