@@ -19,7 +19,6 @@ export async function POST(request: Request) {
 
     const authUserId = authData.user.id;
 
-    // إدراج في جدول users
     const { error: userError } = await supabaseAdmin.from("users").insert({
       auth_user_id: authUserId,
       email,

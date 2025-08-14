@@ -1,35 +1,59 @@
 import { NextResponse } from "next/server";
-import { db } from "@/app/db/db";
-import { employees, showrooms } from "@/app/db/schema";
-import { eq } from "drizzle-orm";
+import { createRouteHandlerClient } from "@/lib/supabase/server";
 
 export async function GET() {
-  
+  const supabase = createRouteHandlerClient();
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
-    const allEmployees = await db
-      .select({
-        id: employees.id,
-        name: employees.name,
-        role: employees.role,
-        salary: employees.salary,
-        createdAt: employees.createdAt,
-        showroomId: employees.showroomId,
-        showroomName: showrooms.name,   
-      })
-      .from(employees)
-      .leftJoin(showrooms, eq(employees.showroomId, showrooms.id)); // 👈 نربط الجداول
+    const { data: employeesData, error: empError } = await supabase
+      .from("employees")
+      .select(`
+        id,
+        name,
+        role,
+        salary,
+        created_at,
+        showroom_id
+      `)
+      .order("created_at", { ascending: false });
 
-    console.log("✅ Employees fetched:", allEmployees);
+    if (empError) {
+      console.error("Supabase employees error:", empError);
+      return NextResponse.json(
+        { error: "Failed to fetch employees", details: empError.message },
+        { status: 500 }
+      );
+    }
 
-    return NextResponse.json({ employees: allEmployees });
+    const { data: showroomsData, error: showError } = await supabase
+      .from("showrooms")
+      .select(`id, name`);
+
+    if (showError) {
+      console.error("Supabase showrooms error:", showError);
+      return NextResponse.json(
+        { error: "Failed to fetch showrooms", details: showError.message },
+        { status: 500 }
+      );
+    }
+
+  const employees = (employeesData || []).map(emp => ({
+  ...emp,
+  showroomId: emp.showroom_id,
+  showroomName: showroomsData?.find(s => s.id === emp.showroom_id)?.name ?? null,
+  createdAt: emp.created_at, 
+}));
+
+    return NextResponse.json({ employees });
   } catch (error: any) {
-    console.error("🔥 Error fetching employees:", error);
-
+    console.error("🔥 Unexpected error:", error);
     return NextResponse.json(
-      {
-        error: "فشل في جلب الموظفين",
-        details: error.message || error.toString(),
-      },
+      { error: "Unexpected error", details: error.message || error.toString() },
       { status: 500 }
     );
   }
