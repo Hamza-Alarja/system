@@ -1,21 +1,10 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
-  "/api/create-user/route": "app/api/create-user/route.js",
-  "/api/create-showroom/route": "app/api/create-showroom/route.js",
-  "/api/employees/route": "app/api/employees/route.js",
-  "/api/expenses/route": "app/api/expenses/route.js",
-  "/api/get-role/route": "app/api/get-role/route.js",
-  "/api/paid-funds/route": "app/api/paid-funds/route.js",
-  "/api/salaries/route": "app/api/salaries/route.js",
-  "/api/transactions/route": "app/api/transactions/route.js",
+  "/api/showrooms/[id]/route": "app/api/showrooms/[id]/route.js",
   "/api/showrooms/route": "app/api/showrooms/route.js",
-  "/api/user-profile/route": "app/api/user-profile/route.js",
+  "/api/employees/route": "app/api/employees/route.js",
+  "/api/employees/[id]/route": "app/api/employees/[id]/route.js",
   "/page": "app/page.js",
-  "/dashboard/page": "app/dashboard/page.js",
-  "/dashboard/showrooms/new/page": "app/dashboard/showrooms/new/page.js",
-  "/dashboard/profile/page": "app/dashboard/profile/page.js",
-  "/dashboard/transactions/page": "app/dashboard/transactions/page.js",
   "/dashboard/showrooms/page": "app/dashboard/showrooms/page.js",
-  "/dashboard/employees/page": "app/dashboard/employees/page.js",
-  "/dashboard/employees/new/page": "app/dashboard/employees/new/page.js"
+  "/dashboard/page": "app/dashboard/page.js",
+  "/dashboard/employees/page": "app/dashboard/employees/page.js"
 }

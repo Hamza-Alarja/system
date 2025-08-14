@@ -20,10 +20,28 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, Search, Users, Building2, Loader2 } from "lucide-react";
+import {
+  PlusCircle,
+  Search,
+  Users,
+  Building2,
+  Loader2,
+  Trash2,
+  Edit,
+  Save,
+  X,
+} from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { UaeDirhamIcon } from "../../custompages/UaeDirhamIcon";
 import { useAppStore } from "@/store/app";
+import { useToast } from "@/components/ui/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type Employee = {
   id: string;
@@ -40,8 +58,17 @@ export function EmployeesListPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editData, setEditData] = useState<Partial<Employee>>({});
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const { user } = useAuthStore();
-  const { showrooms } = useAppStore();
+  const { showrooms, fetchShowrooms } = useAppStore();
+  const { toast } = useToast();
+  useEffect(() => {
+    if (!showrooms || showrooms.length === 0) {
+      fetchShowrooms?.();
+    }
+  }, [showrooms, fetchShowrooms]);
 
   const getShowroomName = (id?: string) => {
     const showroom = showrooms.find((s) => s.id === id);
@@ -60,6 +87,11 @@ export function EmployeesListPage() {
         setEmployees(data.employees || []);
       } catch (error) {
         console.error(error);
+        toast({
+          title: "خطأ",
+          description: "فشل في تحميل قائمة الموظفين",
+          variant: "destructive",
+        });
       } finally {
         setLoading(false);
       }
@@ -67,6 +99,109 @@ export function EmployeesListPage() {
 
     fetchEmployees();
   }, []);
+
+  const startEditing = (employee: Employee) => {
+    setEditingId(employee.id);
+    setEditData({
+      name: employee.name,
+      salary: employee.salary,
+      role: employee.role,
+      showroom_id: employee.showroom_id,
+    });
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditData({});
+  };
+
+  const handleEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setEditData((prev) => ({
+      ...prev,
+      [name]: name === "salary" ? Number(value) : value,
+    }));
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    setEditData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const saveEdit = async (id: string) => {
+    try {
+      const res = await fetch(`/api/employees/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(editData),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(
+          errorData.message ||
+            `Failed to update employee: ${res.status} ${res.statusText}`
+        );
+      }
+
+      setEmployees(
+        employees.map((employee) =>
+          employee.id === id ? { ...employee, ...editData } : employee
+        )
+      );
+      setEditingId(null);
+      setEditData({});
+      toast({
+        title: "تم التحديث",
+        description: "تم تحديث بيانات الموظف بنجاح",
+      });
+    } catch (error: any) {
+      console.error("Error updating employee:", error);
+      toast({
+        title: "خطأ",
+        description: error.message || "فشل في تحديث الموظف",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("هل أنت متأكد أنك تريد حذف هذا الموظف؟")) return;
+
+    try {
+      setDeletingId(id);
+      const res = await fetch(`/api/employees/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(
+          errorData.message ||
+            `Failed to delete employee: ${res.status} ${res.statusText}`
+        );
+      }
+
+      setEmployees(employees.filter((employee) => employee.id !== id));
+      toast({
+        title: "تم الحذف",
+        description: "تم حذف الموظف بنجاح",
+      });
+    } catch (error: any) {
+      console.error("Error deleting employee:", error);
+      toast({
+        title: "خطأ",
+        description: error.message || "فشل في حذف الموظف",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const filteredEmployees = employees.filter((employee) =>
     employee.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -137,48 +272,143 @@ export function EmployeesListPage() {
               <div className="sm:hidden space-y-2 p-2">
                 {filteredEmployees.map((employee) => (
                   <Card key={employee.id} className="p-3">
-                    <div className="flex justify-between items-start">
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-gray-400" />
-                        <span className="font-medium text-sm">
-                          {employee.name}
-                        </span>
+                    {editingId === employee.id ? (
+                      <div className="space-y-3">
+                        <Input
+                          name="name"
+                          value={editData.name || ""}
+                          onChange={handleEditChange}
+                          placeholder="اسم الموظف"
+                          className="text-sm"
+                        />
+                        <Input
+                          name="salary"
+                          type="number"
+                          value={editData.salary || ""}
+                          onChange={handleEditChange}
+                          placeholder="الراتب"
+                          className="text-sm"
+                        />
+                        <Select
+                          value={editData.role || ""}
+                          onValueChange={(value) =>
+                            handleSelectChange("role", value)
+                          }
+                        >
+                          <SelectTrigger className="text-xs h-8">
+                            <SelectValue placeholder="اختر الصفة" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="employee">موظف</SelectItem>
+                            <SelectItem value="accountant">محاسب</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Select
+                          value={editData.showroom_id || ""}
+                          onValueChange={(value) =>
+                            handleSelectChange("showroom_id", value)
+                          }
+                        >
+                          <SelectTrigger className="text-xs h-8">
+                            <SelectValue placeholder="اختر المعرض" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {showrooms.map((showroom) => (
+                              <SelectItem key={showroom.id} value={showroom.id}>
+                                {showroom.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={cancelEditing}
+                          >
+                            <X className="h-4 w-4 ml-1" />
+                            إلغاء
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => saveEdit(employee.id)}
+                          >
+                            <Save className="h-4 w-4 ml-1" />
+                            حفظ
+                          </Button>
+                        </div>
                       </div>
-                      <Badge
-                        variant="outline"
-                        className="text-[10px] sm:text-xs"
-                      >
-                        {{
-                          accountant: "محاسب",
-                          employee: "موظف",
-                        }[employee.role] || employee.role}
-                      </Badge>
-                    </div>
+                    ) : (
+                      <>
+                        <div className="flex justify-between items-start">
+                          <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4 text-gray-400" />
+                            <span className="font-medium text-sm">
+                              {employee.name}
+                            </span>
+                          </div>
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] sm:text-xs"
+                          >
+                            {{
+                              accountant: "محاسب",
+                              employee: "موظف",
+                            }[employee.role] || employee.role}
+                          </Badge>
+                        </div>
 
-                    <div className="mt-2 flex items-center gap-2 text-xs">
-                      <Building2 className="h-3 w-3 text-gray-400" />
-                      <span>
-                        {employee.showroomName ||
-                          getShowroomName(employee.showroom_id)}
-                      </span>
-                    </div>
+                        <div className="mt-2 flex items-center gap-2 text-xs">
+                          <Building2 className="h-3 w-3 text-gray-400" />
+                          <span>
+                            {employee.showroomName ||
+                              getShowroomName(employee.showroom_id)}
+                          </span>
+                        </div>
 
-                    <div className="mt-2 flex items-center gap-2 text-xs">
-                      <UaeDirhamIcon />
-                      <span className="font-medium">
-                        {formatNumber(employee.salary)}
-                      </span>
-                    </div>
+                        <div className="mt-2 flex items-center gap-2 text-xs">
+                          <UaeDirhamIcon />
+                          <span className="font-medium">
+                            {formatNumber(employee.salary)}
+                          </span>
+                        </div>
 
-                    <div className="mt-2">
-                      <span className="text-xs text-muted-foreground">
-                        {employee.createdAt
-                          ? new Date(employee.createdAt).toLocaleDateString(
-                              "en"
-                            )
-                          : "—"}
-                      </span>
-                    </div>
+                        <div className="mt-2 flex justify-between items-center">
+                          <span className="text-xs text-muted-foreground">
+                            {employee.createdAt
+                              ? new Date(employee.createdAt).toLocaleDateString(
+                                  "en"
+                                )
+                              : "—"}
+                          </span>
+                          {canManageEmployees && (
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={() => startEditing(employee)}
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-red-500 hover:text-red-600"
+                                onClick={() => handleDelete(employee.id)}
+                                disabled={deletingId === employee.id}
+                              >
+                                {deletingId === employee.id ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-3 w-3" />
+                                )}
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </Card>
                 ))}
               </div>
@@ -203,47 +433,112 @@ export function EmployeesListPage() {
                       <TableHead className="text-right text-xs sm:text-sm px-2 sm:px-4 py-2">
                         تاريخ الانضمام
                       </TableHead>
+                      {canManageEmployees && (
+                        <TableHead className="text-right text-xs sm:text-sm px-2 sm:px-4 py-2">
+                          إجراءات
+                        </TableHead>
+                      )}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredEmployees.map((employee) => (
                       <TableRow key={employee.id} className="hover:bg-gray-50">
                         <TableCell className="px-2 sm:px-4 py-2">
-                          <div className="flex items-center">
-                            <Users className="ml-2 h-4 w-4 text-gray-400" />
-                            <span className="text-xs sm:text-sm">
-                              {employee.name}
-                            </span>
-                          </div>
+                          {editingId === employee.id ? (
+                            <Input
+                              name="name"
+                              value={editData.name || ""}
+                              onChange={handleEditChange}
+                              className="text-xs sm:text-sm h-8"
+                            />
+                          ) : (
+                            <div className="flex items-center">
+                              <Users className="ml-2 h-4 w-4 text-gray-400" />
+                              <span className="text-xs sm:text-sm">
+                                {employee.name}
+                              </span>
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell className="px-2 sm:px-4 py-2">
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] sm:text-xs"
-                          >
-                            {{
-                              accountant: "محاسب",
-                              employee: "موظف",
-                            }[employee.role] || employee.role}
-                          </Badge>
+                          {editingId === employee.id ? (
+                            <Select
+                              value={editData.role || ""}
+                              onValueChange={(value) =>
+                                handleSelectChange("role", value)
+                              }
+                            >
+                              <SelectTrigger className="text-xs h-8">
+                                <SelectValue placeholder="اختر الصفة" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="employee">موظف</SelectItem>
+                                <SelectItem value="accountant">
+                                  محاسب
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] sm:text-xs"
+                            >
+                              {{
+                                accountant: "محاسب",
+                                employee: "موظف",
+                              }[employee.role] || employee.role}
+                            </Badge>
+                          )}
                         </TableCell>
-
                         <TableCell className="px-2 sm:px-4 py-2">
-                          <div className="flex items-center">
-                            <Building2 className="ml-2 h-4 w-4 text-gray-400" />
-                            <span className="text-xs sm:text-sm">
-                              {employee.showroomName ||
-                                getShowroomName(employee.showroom_id)}
-                            </span>
-                          </div>
+                          {editingId === employee.id ? (
+                            <Select
+                              value={editData.showroom_id || ""}
+                              onValueChange={(value) =>
+                                handleSelectChange("showroom_id", value)
+                              }
+                            >
+                              <SelectTrigger className="text-xs h-8">
+                                <SelectValue placeholder="اختر المعرض" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {showrooms.map((showroom) => (
+                                  <SelectItem
+                                    key={showroom.id}
+                                    value={showroom.id}
+                                  >
+                                    {showroom.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <div className="flex items-center">
+                              <Building2 className="ml-2 h-4 w-4 text-gray-400" />
+                              <span className="text-xs sm:text-sm">
+                                {employee.showroomName ||
+                                  getShowroomName(employee.showroom_id)}
+                              </span>
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell className="px-2 sm:px-4 py-2">
-                          <div className="flex items-center gap-1">
-                            <UaeDirhamIcon />
-                            <span className="text-[10px] sm:text-xs">
-                              {formatNumber(employee.salary)}
-                            </span>
-                          </div>
+                          {editingId === employee.id ? (
+                            <Input
+                              name="salary"
+                              type="number"
+                              value={editData.salary || ""}
+                              onChange={handleEditChange}
+                              className="text-xs sm:text-sm h-8"
+                            />
+                          ) : (
+                            <div className="flex items-center gap-1">
+                              <UaeDirhamIcon />
+                              <span className="text-[10px] sm:text-xs">
+                                {formatNumber(employee.salary)}
+                              </span>
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell className="text-muted-foreground text-xs sm:text-sm px-2 sm:px-4 py-2">
                           {employee.createdAt
@@ -252,6 +547,55 @@ export function EmployeesListPage() {
                               )
                             : "—"}
                         </TableCell>
+                        {canManageEmployees && (
+                          <TableCell className="px-2 sm:px-4 py-2">
+                            {editingId === employee.id ? (
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={cancelEditing}
+                                  className="h-8"
+                                >
+                                  <X className="h-4 w-4 ml-1" />
+                                  إلغاء
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => saveEdit(employee.id)}
+                                  className="h-8"
+                                >
+                                  <Save className="h-4 w-4 ml-1" />
+                                  حفظ
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => startEditing(employee)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-8 w-8 text-red-500 hover:text-red-600"
+                                  onClick={() => handleDelete(employee.id)}
+                                  disabled={deletingId === employee.id}
+                                >
+                                  {deletingId === employee.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </div>
+                            )}
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
