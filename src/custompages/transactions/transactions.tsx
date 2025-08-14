@@ -11,7 +11,6 @@ import {
   ArrowUp,
   ArrowDown,
   Wallet,
-  Banknote,
   HandCoins,
   Filter,
 } from "lucide-react";
@@ -133,37 +132,6 @@ export function TransactionsPage() {
   const getShowroomName = (id?: string | number) =>
     showrooms.find((s) => String(s.id) === String(id))?.name || "—";
 
-  const getTransactionConfig = (type: TransactionType) => {
-    const config = {
-      salary: {
-        icon: <HandCoins className="h-4 w-4" />,
-        variant: "secondary",
-        text: "رواتب",
-      },
-      sales: {
-        icon: <Banknote className="h-4 w-4" />,
-        variant: "default",
-        text: "مبيعات",
-      },
-      custody: {
-        icon: <Wallet className="h-4 w-4" />,
-        variant: "outline",
-        text: "عهدة",
-      },
-      expense: {
-        icon: <ArrowDown className="h-4 w-4" />,
-        variant: "destructive",
-        text: "مصروفات",
-      },
-      deduction: {
-        icon: <ArrowDown className="h-4 w-4" />,
-        variant: "destructive",
-        text: "خصومات",
-      },
-    };
-    return config[type] || config.sales;
-  };
-
   const openDialog = (type: TransactionType) => {
     setTransactionType(type);
     setIsDialogOpen(true);
@@ -184,7 +152,6 @@ export function TransactionsPage() {
 
   const renderMobileTransactionCard = (t: any) => {
     const isIncome = ["sales", "custody"].includes(t.type);
-    const config = getTransactionConfig(t.type);
 
     return (
       <Card key={`${t.type}-${t.id}`} className="mb-4">
