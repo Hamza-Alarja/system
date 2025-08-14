@@ -8,7 +8,6 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
@@ -21,8 +20,6 @@ import {
   Banknote,
   HandCoins,
   Filter,
-  ChevronDown,
-  ChevronUp,
 } from "lucide-react";
 import { useAppStore } from "@/store/app";
 import { TransactionFormDialog } from "@/components/transactions/transaction-form-dialog";
@@ -50,7 +47,7 @@ export function TransactionsPage() {
     useState<TransactionType>("sales");
   const [dateRange, setDateRange] = useState<{ start?: Date; end?: Date }>({});
   const [showFilters, setShowFilters] = useState(false);
-  const [sortConfig, setSortConfig] = useState<SortConfig | null>({
+  const [sortConfig] = useState<SortConfig | null>({
     key: "created_at",
     direction: "descending",
   });
@@ -72,20 +69,8 @@ export function TransactionsPage() {
     loadData();
   }, [fetchEmployees, fetchShowrooms, setTransactions]);
 
-  const requestSort = (key: string) => {
-    let direction: "ascending" | "descending" = "ascending";
-    if (
-      sortConfig &&
-      sortConfig.key === key &&
-      sortConfig.direction === "ascending"
-    ) {
-      direction = "descending";
-    }
-    setSortConfig({ key, direction });
-  };
-
   const sortedTransactions = useMemo(() => {
-    let sortableItems = [...transactions];
+    const sortableItems = [...transactions];
     if (sortConfig !== null) {
       sortableItems.sort((a, b) => {
         const aValue = a[sortConfig.key as keyof typeof a];
@@ -199,15 +184,6 @@ export function TransactionsPage() {
     },
   ];
 
-  const renderSortIcon = (key: keyof any) => {
-    if (!sortConfig || sortConfig.key !== key) return null;
-    return sortConfig.direction === "ascending" ? (
-      <ChevronUp className="h-4 w-4 inline ml-1" />
-    ) : (
-      <ChevronDown className="h-4 w-4 inline ml-1" />
-    );
-  };
-
   const renderMobileTransactionCard = (t: any) => {
     const isIncome = ["sales", "custody"].includes(t.type);
     const config = getTransactionConfig(t.type);
@@ -282,7 +258,7 @@ export function TransactionsPage() {
         <div className="lg:hidden space-y-2 " dir="rtl">
           {transactionsToShow
             .filter((t) => !!t.id)
-            .map((t, idx) => renderMobileTransactionCard(t))}
+            .map((t, _idx) => renderMobileTransactionCard(t))}
         </div>
 
         {/* Desktop View - Table */}
