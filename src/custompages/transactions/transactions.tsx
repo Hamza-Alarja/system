@@ -422,6 +422,7 @@ export function TransactionsPage() {
                   .length
               }{" "}
               معاملة
+              
             </p>
           </CardContent>
         </Card>

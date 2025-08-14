@@ -144,8 +144,14 @@ export function EmployeesListPage() {
                           {employee.name}
                         </span>
                       </div>
-                      <Badge variant="outline" className="text-[10px]">
-                        {employee.role}
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] sm:text-xs"
+                      >
+                        {{
+                          accountant: "محاسب",
+                          employee: "موظف",
+                        }[employee.role] || employee.role}
                       </Badge>
                     </div>
 

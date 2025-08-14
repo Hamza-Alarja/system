@@ -2,10 +2,11 @@
   "/api/employees/route": "app/api/employees/route.js",
   "/api/showrooms/route": "app/api/showrooms/route.js",
   "/api/transactions/route": "app/api/transactions/route.js",
-  "/_not-found/page": "app/_not-found/page.js",
   "/page": "app/page.js",
   "/dashboard/transactions/page": "app/dashboard/transactions/page.js",
-  "/dashboard/profile/page": "app/dashboard/profile/page.js",
+  "/dashboard/showrooms/page": "app/dashboard/showrooms/page.js",
   "/dashboard/page": "app/dashboard/page.js",
+  "/dashboard/showrooms/new/page": "app/dashboard/showrooms/new/page.js",
+  "/dashboard/employees/page": "app/dashboard/employees/page.js",
   "/dashboard/employees/new/page": "app/dashboard/employees/new/page.js"
 }
