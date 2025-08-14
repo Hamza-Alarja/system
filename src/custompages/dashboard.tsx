@@ -7,7 +7,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { Building2, Users, DollarSign, TrendingUp, Plus } from "lucide-react";
+import { Building2, Users, TrendingUp, Plus } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { useAppStore } from "@/store/app";
 import Link from "next/link";
@@ -137,7 +137,8 @@ export function DashboardPage() {
                 key={index}
                 href={action.href}
                 className={`flex items-center p-4 rounded-lg transition-all  ${action.color.replace(
-                  "text"
+                  "text",
+                  ""
                 )} border border-gray-100`}
               >
                 <div

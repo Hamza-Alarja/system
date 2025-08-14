@@ -20,17 +20,10 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import {
-  PlusCircle,
-  Search,
-  Users,
-  Building2,
-  Eye,
-  Loader2,
-} from "lucide-react";
-import { useAppStore } from "@/store/app";
+import { PlusCircle, Search, Users, Building2, Loader2 } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { UaeDirhamIcon } from "../../custompages/UaeDirhamIcon";
+import { useAppStore } from "@/store/app";
 
 type Employee = {
   id: string;
@@ -39,6 +32,7 @@ type Employee = {
   salary: number;
   role: string;
   showroom_id?: string;
+  showroomName?: string;
   createdAt: string;
 };
 
@@ -46,11 +40,15 @@ export function EmployeesListPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuthStore();
   const { showrooms } = useAppStore();
-  const { user, permissions } = useAuthStore();
 
-  const canManageEmployees =
-    user?.role === "owner" || permissions?.canManageEmployees;
+  const getShowroomName = (id?: string) => {
+    const showroom = showrooms.find((s) => s.id === id);
+    return showroom?.name || "معرض غير معروف";
+  };
+
+  const canManageEmployees = user?.role === "owner";
 
   useEffect(() => {
     const fetchEmployees = async () => {
@@ -74,12 +72,6 @@ export function EmployeesListPage() {
     employee.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getShowroomName = (id?: string) => {
-    const showroom = showrooms.find((s) => s.id === id);
-    return showroom?.name || "معرض غير معروف";
-  };
-
-  // Format numbers with English locale
   const formatNumber = (num: number) => {
     return new Intl.NumberFormat("en-US").format(num);
   };
@@ -159,11 +151,14 @@ export function EmployeesListPage() {
 
                     <div className="mt-2 flex items-center gap-2 text-xs">
                       <Building2 className="h-3 w-3 text-gray-400" />
-                      <span> {employee.showroomName || "معرض غير معروف"}</span>
+                      <span>
+                        {employee.showroomName ||
+                          getShowroomName(employee.showroom_id)}
+                      </span>
                     </div>
 
                     <div className="mt-2 flex items-center gap-2 text-xs">
-                      <UaeDirhamIcon className="h-3 w-3 text-gray-400" />
+                      <UaeDirhamIcon />
                       <span className="font-medium">
                         {formatNumber(employee.salary)}
                       </span>
@@ -231,7 +226,8 @@ export function EmployeesListPage() {
                           <div className="flex items-center">
                             <Building2 className="ml-2 h-4 w-4 text-gray-400" />
                             <span className="text-xs sm:text-sm">
-                              {employee.showroomName || "معرض غير معروف"}
+                              {employee.showroomName ||
+                                getShowroomName(employee.showroom_id)}
                             </span>
                           </div>
                         </TableCell>

@@ -36,31 +36,19 @@ export async function POST(request: Request) {
       created_at: new Date(),
     };
 
-    switch (type) {
-      case "salary":
-        newRecord = await db.insert(sales).values(commonFields).returning();
-        break;
-      case "sales":
-        newRecord = await db.insert(salary_records).values(commonFields).returning();
-        break;
-      case "custody":
-        newRecord = await db.insert(sales).values(commonFields).returning();
-        break;
-      case "expense":
-        newRecord = await db
-          .insert(expenses)
-          .values({ ...commonFields, employee_id: undefined })
-          .returning();
-        break;
-      case "deduction":
-        newRecord = await db.insert(deductions).values(commonFields).returning();
-        break;
-      default:
-        return NextResponse.json(
-          { error: "نوع المعاملة غير مدعوم" },
-          { status: 400 }
-        );
-    }
+switch (type) {
+  case "salary": // راتب
+    newRecord = await db.insert(sales).values(commonFields).returning();
+    break;
+  case "custody": // عهدة
+    newRecord = await db.insert(salary_records).values(commonFields).returning();
+    break;
+  default:
+    return NextResponse.json(
+      { error: "نوع المعاملة غير مدعوم" },
+      { status: 400 }
+    );
+}
 
     return NextResponse.json(newRecord[0], { status: 201 });
   } catch (error) {
@@ -79,19 +67,24 @@ export async function GET(request: Request) {
     const showroomId = searchParams.get("showroomId");
     const employeeId = searchParams.get("employeeId");
 
-    const makeConditions = (table) => {
+    const makeConditions = (table : any) => {
       const conditions = [];
       if (showroomId) conditions.push(eq(table.showroom_id, showroomId));
       if (employeeId) conditions.push(eq(table.employee_id, employeeId));
       return conditions;
     };
 
-    let data = [];
+    let data: any[] = [];
 
     if (!type || type === "salary") {
       const salaries = await db
         .select({
-          ...salary_records,
+          id: salary_records.id,
+          amount: salary_records.amount,
+          description: salary_records.description,
+          employee_id: salary_records.employee_id,
+          showroom_id: salary_records.showroom_id,
+          created_at: salary_records.created_at,
           employee_name: employees.name,
           showroom_name: showrooms.name,
         })
@@ -108,7 +101,12 @@ export async function GET(request: Request) {
     if (!type || type === "sales") {
       const salesData = await db
         .select({
-          ...sales,
+            id: sales.id,
+                   amount: sales.amount,
+                   description: sales.description,
+                   employee_id: sales.employee_id,
+                   showroom_id: sales.showroom_id,
+                   created_at: sales.created_at,
           employee_name: employees.name,
           showroom_name: showrooms.name,
         })
@@ -125,7 +123,12 @@ export async function GET(request: Request) {
     if (!type || type === "custody") {
       const custodies = await db
         .select({
-          ...advance_payments,
+              id: advance_payments.id,
+          amount: advance_payments.amount,
+          description: advance_payments.description,
+          employee_id: advance_payments.employee_id,
+          showroom_id: advance_payments.showroom_id,
+          created_at: advance_payments.created_at,
           employee_name: employees.name,
           showroom_name: showrooms.name,
         })
@@ -175,7 +178,12 @@ export async function GET(request: Request) {
     if (!type || type === "deduction") {
       const deductionsData = await db
         .select({
-          ...deductions,
+            id: deductions.id,
+          amount: deductions.amount,
+          description: deductions.description,
+          employee_id: deductions.employee_id,
+          showroom_id: deductions.showroom_id,
+          created_at: deductions.created_at,
           employee_name: employees.name,
           showroom_name: showrooms.name,
         })
@@ -184,7 +192,7 @@ export async function GET(request: Request) {
         .leftJoin(showrooms, eq(deductions.showroom_id, showrooms.id))
         .where(makeConditions(deductions).length ? and(...makeConditions(deductions)) : undefined)
         .orderBy(desc(deductions.created_at));
-
+        
       data = data.concat(deductionsData.map((r) => ({
         ...r, type: "deduction"
 

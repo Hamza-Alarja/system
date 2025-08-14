@@ -33,7 +33,7 @@ import {
   employeeSchema,
   type EmployeeFormData,
 } from "@/lib/validations/employee";
-import { ArrowLeft, Users, Loader2 } from "lucide-react";
+import { Users, Loader2 } from "lucide-react";
 
 type Showroom = {
   id: string;
@@ -75,7 +75,7 @@ export function AddEmployeePage() {
       password: "",
       role: "employee",
       showroomId: "",
-      salary: "",
+      salary: 0,
     },
   });
 

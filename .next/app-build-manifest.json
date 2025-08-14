@@ -91,15 +91,20 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/expenses/route.js"
     ],
+    "/api/salaries/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/salaries/route.js"
+    ],
     "/api/paid-funds/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/api/paid-funds/route.js"
     ],
-    "/api/salaries/route": [
+    "/_not-found/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/api/salaries/route.js"
+      "static/chunks/app/_not-found/page.js"
     ]
   }
 }

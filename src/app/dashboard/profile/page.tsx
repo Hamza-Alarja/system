@@ -14,9 +14,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
-import { format } from "date-fns";
-import { arSA } from "date-fns/locale";
 
 interface UserProfile {
   id: string;
@@ -94,8 +91,6 @@ export default function MyDashboard() {
     0
   );
   const remainingBalance = totalPaidFunds - totalExpenses;
-  const balancePercentage =
-    totalPaidFunds > 0 ? (remainingBalance / totalPaidFunds) * 100 : 0;
 
   useEffect(() => {
     if (!isAuthenticated) {

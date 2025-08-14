@@ -25,13 +25,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { name, address, managers } = validation.data;
+  const { name, address } = validation.data;
 
   const { error } = await supabaseAdmin.from("showrooms").insert({
     name,
     address,
     owner_id: user.id,
-    manager_name: managers?.join(", ") || null,
   });
 
   if (error) {

@@ -10,25 +10,31 @@ export interface Showroom {
 }
 
 export interface Employee {
-  id: string;
+ id: string;
+  user_id: string;
   name: string;
-  showroomId: string;
-    showroomName?: string;
-
   salary: number;
-  isActive: boolean;
+  role: string;
+  showroom_id?: string;
+  showroomName?: string; 
   createdAt: string;
 }
 
 export interface Transaction {
+  showroom_name: string;
+  employee_name: string;
   id: string;
   type: 'salary' | 'sales' | 'custody' | 'expense' | 'deduction';
   amount: number;
   description?: string;
   employeeId?: string;
+  employee_id?: string;
   showroomId?: string;
+  showroom_id?: string;
   createdBy: string;
+  
   createdAt: string;
+  created_at?: Date;
 }
 
 interface AppState {
@@ -39,6 +45,7 @@ interface AppState {
   selectedShowroom: Showroom | null;
   selectedEmployee: Employee | null;
 
+  // Existing setters
   setShowrooms: (showrooms: Showroom[]) => void;
   addShowroom: (showroom: Omit<Showroom, 'id' | 'createdAt'> & Partial<Showroom>) => void;
   setEmployees: (employees: Employee[]) => void;
@@ -48,12 +55,45 @@ interface AppState {
   setLoading: (loading: boolean) => void;
   setSelectedShowroom: (showroom: Showroom | null) => void;
   setSelectedEmployee: (employee: Employee | null) => void;
+
+  // Fetch functions (for compatibility with your page)
+  fetchEmployees: () => Promise<void>;
+  fetchShowrooms: () => Promise<void>;
+  fetchTransactions: () => Promise<void>;
 }
 
 export const useAppStore = create<AppState>()((set) => ({
-    employees: [],
+  employees: [],
   showrooms: [],
   transactions: [],
+  isLoading: false,
+  selectedShowroom: null,
+  selectedEmployee: null,
+
+  // Setters
+  setShowrooms: (showrooms) => set({ showrooms }),
+  addShowroom: (showroom) =>
+    set((state) => ({
+      showrooms: [
+        ...state.showrooms,
+        {
+          ...showroom,
+          id: showroom.id || Date.now().toString(),
+          managers: showroom.managers || [],
+          employeeCount: showroom.employeeCount || 0,
+          createdAt: showroom.createdAt || new Date().toISOString(),
+        },
+      ],
+    })),
+  setEmployees: (employees) => set({ employees }),
+  addEmployee: (employee) => set((state) => ({ employees: [...state.employees, employee] })),
+  setTransactions: (transactions) => set({ transactions }),
+  addTransaction: (transaction) => set((state) => ({ transactions: [...state.transactions, transaction] })),
+  setLoading: (loading) => set({ isLoading: loading }),
+  setSelectedShowroom: (selectedShowroom) => set({ selectedShowroom }),
+  setSelectedEmployee: (selectedEmployee) => set({ selectedEmployee }),
+
+  // Fetch functions
   fetchEmployees: async () => {
     const res = await fetch("/api/employees");
     const data = await res.json();
@@ -64,51 +104,9 @@ export const useAppStore = create<AppState>()((set) => ({
     const data = await res.json();
     set({ showrooms: data.showrooms || [] });
   },
-  
   fetchTransactions: async () => {
     const res = await fetch("/api/transactions");
     const data = await res.json();
     set({ transactions: data.transactions || [] });
   },
- 
-  isLoading: false,
-  selectedShowroom: null,
-  selectedEmployee: null,
-
-  setShowrooms: (showrooms) => set({ showrooms }),
-
-  addShowroom: (showroom) =>
-    set((state) => {
-      const finalManagers =
-        Array.isArray(showroom.managers) && showroom.managers.length > 0
-          ? showroom.managers
-          : [];
-
-      return {
-        showrooms: [
-          ...state.showrooms,
-          {
-            ...showroom,
-            id: showroom.id || Date.now().toString(),
-            managers: finalManagers,
-            employeeCount: showroom.employeeCount || 0,
-            createdAt: showroom.createdAt || new Date().toISOString(),
-          },
-        ],
-      };
-    }),
-
-  setEmployees: (employees) => set({ employees }),
-  addEmployee: (employee) => set((state) => ({
-    employees: [...state.employees, employee]
-  })),
-
-  setTransactions: (transactions) => set({ transactions }),
-  addTransaction: (transaction) => set((state) => ({
-    transactions: [...state.transactions, transaction]
-  })),
-
-  setLoading: (loading) => set({ isLoading: loading }),
-  setSelectedShowroom: (selectedShowroom) => set({ selectedShowroom }),
-  setSelectedEmployee: (selectedEmployee) => set({ selectedEmployee }),
 }));

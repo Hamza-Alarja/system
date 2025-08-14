@@ -1,7 +1,6 @@
 "use client";
 
 import { Sidebar } from "@/components/layout/sidebar";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function DashboardLayout({
   children,

@@ -10,3 +10,4 @@ showroomId: z.string().min(1, "اختر معرضًا"),  salary: z.preprocess(
     z.number().min(1, "الراتب مطلوب")
   ),
 });
+export type EmployeeFormData = z.infer<typeof employeeSchema>;

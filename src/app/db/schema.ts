@@ -7,7 +7,6 @@ import {
   decimal,
   uuid,
   pgEnum,
-  varchar,
   serial,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';

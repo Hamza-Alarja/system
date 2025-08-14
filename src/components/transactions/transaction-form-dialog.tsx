@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -65,19 +64,17 @@ export function TransactionFormDialog({
       type: transactionType,
       amount: "",
       description: "",
-      employeeId: null, // اجعلها null بدلاً من ""
-      showroomId: null, // اجعلها null بدلاً من ""
+      employeeId: undefined,
+      showroomId: undefined,
     },
   });
 
   const selectedShowroomId = form.watch("showroomId");
 
-  // عند تغيير المعرض، إعادة تعيين اختيار الموظف
   useEffect(() => {
-    form.setValue("employeeId", null);
+    form.setValue("employeeId", undefined);
   }, [selectedShowroomId, form]);
 
-  // تصفية الموظفين حسب المعرض المحدد
   const filteredEmployees = useMemo(() => {
     if (!selectedShowroomId) return [];
     return employees.filter(
@@ -88,9 +85,9 @@ export function TransactionFormDialog({
   const onSubmit = async (data: TransactionFormData) => {
     setIsLoading(true);
     try {
-      // تحقق أن employeeId و showroomId هما إما UUID أو null
       const payload = {
         ...data,
+        type: transactionType,
         amount: Number(data.amount),
         employeeId: data.employeeId || null,
         showroomId: data.showroomId || null,
@@ -115,8 +112,8 @@ export function TransactionFormDialog({
         type: transactionType,
         amount: "",
         description: "",
-        employeeId: null,
-        showroomId: null,
+        employeeId: undefined,
+        showroomId: undefined,
       });
 
       onOpenChange(false);
@@ -136,9 +133,7 @@ export function TransactionFormDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle className="capitalize">إضافة معاملة</DialogTitle>
-        </DialogHeader>
+        <DialogHeader></DialogHeader>
 
         <Form {...form}>
           <form
@@ -264,11 +259,13 @@ export function TransactionFormDialog({
                               : "لا يوجد موظفين في هذا المعرض"}
                           </SelectItem>
                         ) : (
-                          filteredEmployees.map((employee) => (
-                            <SelectItem key={employee.id} value={employee.id}>
-                              {employee.name}
-                            </SelectItem>
-                          ))
+                          filteredEmployees
+                            .filter((employee) => !!employee.id)
+                            .map((employee) => (
+                              <SelectItem key={employee.id} value={employee.id}>
+                                {employee.name}
+                              </SelectItem>
+                            ))
                         )}
                       </SelectContent>
                     </Select>

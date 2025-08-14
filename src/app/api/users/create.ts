@@ -7,7 +7,7 @@ import { eq } from "drizzle-orm";
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") return res.status(405).json({ message: "Method not allowed" });
 
-  const { email, password, name, role, showroom_id, creator_id } = req.body;
+  const { email, password, name, role,  showroomId, creator_id } = req.body;
 
   if (!email || !password || !name || !role || !creator_id) {
     return res.status(400).json({ message: "Missing required fields" });
@@ -32,9 +32,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (creator.role === "accountant") {
       const perms = await db.query.permissions.findFirst({
         where: (p, { eq }) =>
-          eq(p.user_id, creator_id) && eq(p.showroom_id, creator.showroom_id),
+          eq(p.userId, creator_id)
       });
-      if (!perms?.can_add_employees) {
+    if (!perms?.canManageEmployees) {
         return res.status(403).json({ message: "You are not allowed to add employees" });
       }
     }
@@ -49,12 +49,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (error) throw error;
 
     // إضافة سجل في employees
-    await db.insert(employees).values({
-      user_id: data.user.id,
-      name,
-      role,
-      showroom_id,
-    });
+await db.insert(employees).values({
+  user_id: data.user.id,   // كما في schema
+  name,
+  role,
+  showroomId,              // CamelCase كما في schema
+  salary: "0",  // قيمة ابتدائية، أو أي قيمة مطلوبة
+  isActive: true,
+});
 
     return res.status(201).json({ message: "User created successfully" });
   } catch (err: any) {

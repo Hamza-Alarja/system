@@ -20,15 +20,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import {
-  PlusCircle,
-  Search,
-  Building2,
-  Users,
-  MapPin,
-  Eye,
-  Loader2,
-} from "lucide-react";
+import { PlusCircle, Search, Building2, MapPin, Loader2 } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 
 type Showroom = {

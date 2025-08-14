@@ -37,7 +37,6 @@ interface SortConfig {
 export function TransactionsPage() {
   const fetchEmployees = useAppStore((state) => state.fetchEmployees);
   const fetchShowrooms = useAppStore((state) => state.fetchShowrooms);
-  const fetchTransactions = useAppStore((state) => state.fetchTransactions);
 
   const employees = useAppStore((state) => state.employees);
   const showrooms = useAppStore((state) => state.showrooms);
@@ -73,7 +72,7 @@ export function TransactionsPage() {
     loadData();
   }, [fetchEmployees, fetchShowrooms, setTransactions]);
 
-  const requestSort = (key: keyof any) => {
+  const requestSort = (key: string) => {
     let direction: "ascending" | "descending" = "ascending";
     if (
       sortConfig &&
@@ -89,8 +88,8 @@ export function TransactionsPage() {
     let sortableItems = [...transactions];
     if (sortConfig !== null) {
       sortableItems.sort((a, b) => {
-        const aValue = a[sortConfig.key];
-        const bValue = b[sortConfig.key];
+        const aValue = a[sortConfig.key as keyof typeof a];
+        const bValue = b[sortConfig.key as keyof typeof b];
 
         if (aValue === undefined || bValue === undefined) return 0;
 
@@ -119,8 +118,10 @@ export function TransactionsPage() {
       const matchesType = activeTab === "all" || t.type === activeTab;
 
       const matchesDateRange =
-        (!dateRange.start || new Date(t.created_at) >= dateRange.start) &&
-        (!dateRange.end || new Date(t.created_at) <= dateRange.end);
+        (!dateRange.start ||
+          (t.created_at && new Date(t.created_at) >= dateRange.start)) &&
+        (!dateRange.end ||
+          (t.created_at && new Date(t.created_at) <= dateRange.end));
 
       return matchesSearch && matchesType && matchesDateRange;
     });
@@ -130,7 +131,7 @@ export function TransactionsPage() {
       .reduce((sum, t) => sum + t.amount, 0);
 
     const expenses = filtered
-      .filter((t) => ["salary", "expense", "deduction"].includes(t.type))
+      .filter((t) => ["sales", "expense", "deduction"].includes(t.type))
       .reduce((sum, t) => sum + t.amount, 0);
 
     return {
@@ -212,7 +213,7 @@ export function TransactionsPage() {
     const config = getTransactionConfig(t.type);
 
     return (
-      <Card key={t.id} className="mb-4">
+      <Card key={`${t.type}-${t.id}`} className="mb-4">
         <CardContent className="p-4">
           <div className="flex justify-between items-start">
             <div className="flex-1">
@@ -279,103 +280,62 @@ export function TransactionsPage() {
       <>
         {/* Mobile View - Cards */}
         <div className="lg:hidden space-y-2 " dir="rtl">
-          {transactionsToShow.map((t) => renderMobileTransactionCard(t))}
+          {transactionsToShow
+            .filter((t) => !!t.id)
+            .map((t, idx) => renderMobileTransactionCard(t))}
         </div>
 
         {/* Desktop View - Table */}
         <div className="hidden md:block rounded-md border">
           <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead
-                  className="w-[150px] text-right cursor-pointer hover:bg-muted/50"
-                  onClick={() => requestSort("amount")}
-                >
-                  <div className="flex items-center justify-end">
-                    المبلغ
-                    {renderSortIcon("amount")}
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="text-right cursor-pointer hover:bg-muted/50"
-                  onClick={() => requestSort("description")}
-                >
-                  <div className="flex items-center justify-end">
-                    الوصف
-                    {renderSortIcon("description")}
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="text-right cursor-pointer hover:bg-muted/50"
-                  onClick={() => requestSort("employee_name")}
-                >
-                  <div className="flex items-center justify-end">
-                    الموظف
-                    {renderSortIcon("employee_name")}
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="text-right cursor-pointer hover:bg-muted/50"
-                  onClick={() => requestSort("showroom_name")}
-                >
-                  <div className="flex items-center justify-end">
-                    المعرض
-                    {renderSortIcon("showroom_name")}
-                  </div>
-                </TableHead>
-                <TableHead
-                  className="text-right cursor-pointer hover:bg-muted/50"
-                  onClick={() => requestSort("created_at")}
-                >
-                  <div className="flex items-center justify-end">
-                    التاريخ
-                    {renderSortIcon("created_at")}
-                  </div>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
+            <TableHeader>{/* ...existing code... */}</TableHeader>
             <TableBody>
-              {transactionsToShow.map((t) => {
-                const isIncome = ["sales", "custody"].includes(t.type);
-                return (
-                  <TableRow key={t.id} className="hover:bg-muted/50">
-                    <TableCell
-                      className={`font-medium text-right ${
-                        isIncome ? "text-green-500" : "text-red-500"
-                      }`}
+              {transactionsToShow
+                .filter((t) => !!t.id)
+                .map((t, idx) => {
+                  const isIncome = ["sales", "custody"].includes(t.type);
+                  return (
+                    <TableRow
+                      key={`${t.type}-${t.id ?? idx}`}
+                      className="hover:bg-muted/50"
                     >
-                      {isIncome ? "+" : "-"}
-                      {t.amount.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {t.description || "—"}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {t.employee_name ||
-                        getEmployeeName(t.employee_id || t.employeeId) ||
-                        "لا يوجد"}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {t.showroom_name ||
-                        getShowroomName(t.showroom_id || t.showroomId) ||
-                        "لا يوجد"}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {t.created_at
-                        ? new Date(t.created_at).toLocaleDateString("en", {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })
-                        : "—"}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+                      <TableCell
+                        className={`font-medium text-right ${
+                          isIncome ? "text-green-500" : "text-red-500"
+                        }`}
+                      >
+                        {isIncome ? "+" : "-"}
+                        {t.amount.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {t.description || "—"}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {t.employee_name ||
+                          getEmployeeName(t.employee_id || t.employeeId) ||
+                          "لا يوجد"}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {t.showroom_name ||
+                          getShowroomName(t.showroom_id || t.showroomId) ||
+                          "لا يوجد"}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {t.created_at
+                          ? new Date(t.created_at).toLocaleDateString("en", {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "—"}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
             </TableBody>
           </Table>
         </div>
@@ -500,7 +460,7 @@ export function TransactionsPage() {
             <p className="text-xs text-muted-foreground mt-1">
               {
                 filteredTransactions.filter((t) =>
-                  ["salary", "expense", "deduction"].includes(t.type)
+                  ["sales", "expense", "deduction"].includes(t.type)
                 ).length
               }{" "}
               معاملة
