@@ -197,11 +197,7 @@ export function TransactionsPage() {
         <CardContent className="p-4">
           <div className="flex justify-between items-start">
             <div className="flex-1">
-              <div className="flex items-center gap-2">
-                {config.icon}
-                <h4 className="font-medium">{config.text}</h4>
-              </div>
-              <p className="text-sm mt-2">{t.description || "—"}</p>
+              <p className="text-sm ">{t.description || "—"}</p>
               <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
                 <span>
                   {t.employee_name ||
@@ -268,7 +264,6 @@ export function TransactionsPage() {
         {/* Desktop View - Table */}
         <div className="hidden md:block rounded-md border">
           <Table>
-            <TableHeader>{/* ...existing code... */}</TableHeader>
             <TableBody>
               {transactionsToShow
                 .filter((t) => !!t.id)
@@ -365,7 +360,7 @@ export function TransactionsPage() {
                   }
                 >
                   <option value="all">الكل</option>
-                  <option value="expense">مصروفات</option>
+                  <option value="expense">مصاريف</option>
                 </select>
               </div>
               <div>
@@ -422,7 +417,6 @@ export function TransactionsPage() {
                   .length
               }{" "}
               معاملة
-              
             </p>
           </CardContent>
         </Card>
@@ -519,7 +513,7 @@ export function TransactionsPage() {
             onValueChange={(v) => setActiveTab(v as "all" | TransactionType)}
           >
             <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="expense">مصروفات</TabsTrigger>
+              <TabsTrigger value="expense">مصاريف</TabsTrigger>
               <TabsTrigger value="all">الكل</TabsTrigger>
             </TabsList>
 
