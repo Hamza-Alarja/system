@@ -4,6 +4,7 @@ import { employees, showrooms } from "@/app/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function GET() {
+  
   try {
     const allEmployees = await db
       .select({

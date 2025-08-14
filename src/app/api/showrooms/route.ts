@@ -4,7 +4,7 @@ import { createRouteHandlerClient } from "@/lib/supabase/server";
 export async function GET() {
   const supabase = createRouteHandlerClient();
 
-  const {
+  const {  
     data: { user },
     error: userError,
   } = await supabase.auth.getUser();
