@@ -8,13 +8,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method !== "POST") return res.status(405).json({ message: "Method not allowed" });
 
   const { email, password, name, role, showroomId, creator_id } = req.body;
+  console.log("BODY:", req.body);
 
   if (!email || !password || !name || !role || !creator_id) {
     return res.status(400).json({ message: "Missing required fields" });
   }
 
   try {
-    // التحقق من صلاحية المنشئ (creator_id)
     const creatorRes = await db
       .select()
       .from(employees)
@@ -23,12 +23,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const creator = creatorRes[0];
     if (!creator) return res.status(403).json({ message: "Unauthorized" });
 
-    // فقط المالك أو المحاسب بصلاحية يمكنه الإضافة
     if (creator.role === "employee") {
       return res.status(403).json({ message: "Employees cannot create users" });
     }
 
-    // المحاسب لا يستطيع إضافة موظف بدون صلاحية
     if (creator.role === "accountant") {
       const perms = await db.query.permissions.findFirst({
         where: (p, { eq }) =>
@@ -39,7 +37,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    // إنشاء مستخدم Supabase
     const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,

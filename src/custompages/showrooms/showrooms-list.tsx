@@ -50,6 +50,7 @@ export function ShowroomsListPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<Partial<Showroom>>({});
+  const [savingId, setSavingId] = useState<string | null>(null);
   const { user } = useAuthStore();
   const { toast } = useToast();
 
@@ -98,7 +99,114 @@ export function ShowroomsListPage() {
   }, []);
 
   const handleDelete = async (id: string) => {
-    if (!confirm("هل أنت متأكد أنك تريد حذف هذا المعرض؟")) return;
+    // إنشاء عنصر التأكيد
+    const confirmDiv = document.createElement("div");
+    confirmDiv.innerHTML = `
+<div id="confirmOverlay" style="
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+">
+  <div id="confirmBox" style="
+    background: white;
+    padding: 15px 20px;
+    border-radius: 10px;
+    max-width: 320px;
+    text-align: center;
+    box-shadow: 0 3px 15px rgba(0,0,0,0.12);
+    transform: scale(0.95);
+    transition: all 0.25s ease;
+  ">
+    <h3 style="margin-bottom: 10px; color: #333; font-size: 1rem;">تأكيد الحذف</h3>
+    <p style="margin-bottom: 15px; color: #555; font-size: 0.85rem;">
+      هل أنت متأكد أنك تريد حذف هذا المعرض؟
+    </p>
+    <div style="display: flex; justify-content: center; gap: 10px;">
+      <button id="confirmCancel" style="
+        padding: 6px 14px;
+        background: #f0f0f0;
+        border: none;
+        border-radius: 5px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      " onmouseover="this.style.background='#e0e0e0'" onmouseout="this.style.background='#f0f0f0'">
+        إلغاء
+      </button>
+      <button id="confirmDelete" style="
+        padding: 6px 14px;
+        background: #ff4444;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      " onmouseover="this.style.background='#e53935'" onmouseout="this.style.background='#ff4444'">
+        نعم، احذف
+      </button>
+    </div>
+  </div>
+</div>
+  `;
+
+    document.body.appendChild(confirmDiv);
+
+    // إظهار مع تأثير حركي
+    setTimeout(() => {
+      const overlay = document.getElementById("confirmOverlay");
+      const box = document.getElementById("confirmBox");
+      if (overlay && box) {
+        overlay.style.opacity = "1";
+        box.style.transform = "scale(1)";
+      }
+    }, 10);
+
+    // انتظار رد المستخدم
+    const userConfirmed = await new Promise((resolve) => {
+      document
+        .getElementById("confirmDelete")
+        ?.addEventListener("click", () => {
+          // تأثير إغلاق عند الحذف
+          const overlay = document.getElementById("confirmOverlay");
+          const box = document.getElementById("confirmBox");
+          if (overlay && box) {
+            overlay.style.opacity = "0";
+            box.style.transform = "scale(0.9)";
+            setTimeout(() => {
+              document.body.removeChild(confirmDiv);
+              resolve(true);
+            }, 300);
+          }
+        });
+
+      document
+        .getElementById("confirmCancel")
+        ?.addEventListener("click", () => {
+          // تأثير إغلاق عند الإلغاء
+          const overlay = document.getElementById("confirmOverlay");
+          const box = document.getElementById("confirmBox");
+          if (overlay && box) {
+            overlay.style.opacity = "0";
+            box.style.transform = "scale(0.9)";
+            setTimeout(() => {
+              document.body.removeChild(confirmDiv);
+              resolve(false);
+            }, 300);
+          }
+        });
+    });
+
+    if (!userConfirmed) return;
 
     try {
       setDeletingId(id);
@@ -158,12 +266,11 @@ export function ShowroomsListPage() {
 
   const saveEdit = async (id: string) => {
     try {
+      setSavingId(id); 
       const res = await fetch(`/api/showrooms/${id}`, {
         method: "PATCH",
         credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editData),
       });
 
@@ -193,6 +300,8 @@ export function ShowroomsListPage() {
         description: error.message || "فشل في تحديث المعرض",
         variant: "destructive",
       });
+    } finally {
+      setSavingId(null); 
     }
   };
 
@@ -289,9 +398,18 @@ export function ShowroomsListPage() {
                           <Button
                             size="sm"
                             onClick={() => saveEdit(showroom.id)}
+                            className="h-8"
+                            disabled={
+                              editingId === showroom.id &&
+                              savingId === showroom.id
+                            } // نضيف state
                           >
-                            <Save className="h-4 w-4 ml-1" />
-                            حفظ
+                            {savingId === showroom.id ? (
+                              <Loader2 className="h-4 w-4 ml-1 animate-spin" />
+                            ) : (
+                              <Save className="h-4 w-4 ml-1" />
+                            )}
+                            {savingId === showroom.id ? "" : "حفظ"}
                           </Button>
                         </div>
                       </div>
@@ -449,9 +567,17 @@ export function ShowroomsListPage() {
                                 size="sm"
                                 onClick={() => saveEdit(showroom.id)}
                                 className="h-8"
+                                disabled={
+                                  editingId === showroom.id &&
+                                  savingId === showroom.id
+                                } // نضيف state
                               >
-                                <Save className="h-4 w-4 ml-1" />
-                                حفظ
+                                {savingId === showroom.id ? (
+                                  <Loader2 className="h-4 w-4 ml-1 animate-spin" />
+                                ) : (
+                                  <Save className="h-4 w-4 ml-1" />
+                                )}
+                                {savingId === showroom.id ? "" : "حفظ"}
                               </Button>
                             </div>
                           ) : (
