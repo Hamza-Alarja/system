@@ -223,7 +223,7 @@ export function TransactionsPage() {
         </div>
 
         {/* Desktop View - Table */}
-        <div className="hidden md:block rounded-md border">
+        <div className="hidden lg:block rounded-md border">
           <Table>
             <TableBody>
               {transactionsToShow
